@@ -1,67 +1,215 @@
-# Template de démonstration
+# Capteurs HTTP / JSON
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Faites de n'importe quelle adresse qui répond en HTTP un capteur Gladys : une
+API JSON (box, NAS, onduleur solaire, prise connectée, API publique), une
+réponse en texte brut, ou une page web. Vous indiquez où se trouve la valeur
+dans la réponse, et son type (température, puissance, énergie, oui/non,
+texte…) : elle devient un appareil, lu à l'intervalle choisi. Vos scènes
+peuvent aussi appeler n'importe quelle adresse, avec des valeurs de la scène,
+et se servir de la réponse dans les étapes suivantes.
 
-## Ce que vous obtenez
+C'est l'équivalent dans Gladys des intégrations `rest` et `scrape` de Home
+Assistant. Rien n'est écrit ailleurs qu'aux adresses que vous saisissez.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+Testé avec un serveur web de test (JSON, texte, HTML, erreurs 401 et 500,
+réponses lentes et trop grandes, redirections) et l'API publique Open-Meteo,
+dans le conteneur verrouillé de Gladys. Vos retours sont les bienvenus :
+[github.com/guim31/gladys-http-json/issues](https://github.com/guim31/gladys-http-json/issues).
 
-## Configuration
+## Prérequis
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+- Gladys Assistant 5.1.0 ou plus récent.
+- Une adresse que la machine Gladys peut joindre : sur votre réseau local (les
+  adresses privées sont permises, c'est l'usage principal) ou sur Internet.
+- Si l'adresse le demande, son jeton ou sa clé (voir **En-tête secret
+  (jeton)**).
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+## Pour commencer
 
-## Actions
+### 1. Remplir un emplacement
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+La configuration compte 10 emplacements, **Capteur 1** à **Capteur 10**. Un
+emplacement avec une **Adresse (URL)** est un capteur ; une adresse vide
+laisse l'emplacement libre. Chaque emplacement a ces champs :
 
-## Scènes
+- **Nom** : le nom de l'appareil (vide : « Capteur HTTP 3 »).
+- **Adresse (URL)** : `http://` ou `https://`, ex.
+  `http://192.168.1.20/api/status`. Sans schéma, `http://` est utilisé. Un
+  utilisateur et un mot de passe dans l'adresse sont refusés : utilisez
+  l'en-tête secret.
+- **Méthode** : GET ou POST.
+- **En-têtes** : un `Nom: valeur` par ligne, ou plusieurs séparés par un `|` entouré d'espaces,
+  ex. `Accept: application/json | X-Room: piscine`.
+- **En-tête secret (jeton)** : jamais réaffiché, jamais écrit dans les logs.
+  Un jeton seul part en `Authorization: Bearer <jeton>` ; `Basic …` ou
+  `Token …` partent tels quels après `Authorization:` ; un en-tête entier
+  comme `X-Api-Key: abc123` (ou `X-Api-Key:abc123`) part tel quel.
+- **Corps (POST)** : envoyé en POST seulement ; du JSON part en
+  `application/json`, le reste en texte.
+- **Chemin du champ ou /expression régulière/** : où se trouve la valeur
+  (section suivante).
+- **Type** : ce qu'est la valeur (plus bas).
+- **Multiplicateur** et **Décalage** : pour les nombres, valeur ×
+  multiplicateur + décalage (ex. `0,001` pour passer des Wh aux kWh, `0,1`
+  pour des dixièmes de degré). La virgule est acceptée. Vides : 1 et 0.
+- **Intervalle de lecture** : de 30 secondes à 1 heure.
+- **Vérifier le certificat (https)** : activé par défaut ; décochez-le pour un
+  appareil au certificat auto-signé.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+Sous **Options**, **Langue des noms et des messages** règle les noms des
+fonctionnalités (fixés à l'ajout de l'appareil), les variables de scène et le
+rapport de test.
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+### 2. Dire où se trouve la valeur
+
+- **Une réponse JSON** : un chemin de champ. `data.temp`,
+  `sensors[0].value`, `items[-1].price` (le dernier), `['clé avec.points']`,
+  ou les formes JSONPath `$.data.temp` et
+  `items[?(@.name=='cuisine')].temp` (le premier élément dont `name` vaut
+  `cuisine` ; `==` et `!=`, textes entre guillemets, nombres, `true`,
+  `false`, `null`).
+- **Une réponse texte ou une page web** : une expression régulière entre
+  barres obliques, ex. `/Température : ([0-9.,]+)/`. Le premier groupe entre
+  parenthèses est la valeur (toute la correspondance s'il n'y a pas de
+  groupe). Options après la dernière barre : `i` (casse), `s`, `m`, `u`. Pour
+  une page web, les balises sont retirées de la valeur et les entités
+  courantes (`&nbsp;`, `&deg;`…) décodées. Une expression qui prend plus d'une
+  demi-seconde est arrêtée.
+- **Vide** : toute la réponse (un appareil qui répond `21.5` ou `ON`).
+
+Un nombre dans un texte est trouvé tout seul : `21,5 °C` donne 21,5,
+`1 234,5 m³` donne 1234,5. Une virgule ou un point comme séparateur de milliers
+n'est pas compris (`1,234.5`) : écrivez une expression régulière pour
+ceux-là.
+
+### 3. Choisir le type
+
+| Type                    | Fonctionnalité Gladys  | La valeur           |
+| ----------------------- | ---------------------- | ------------------- |
+| **Nombre (sans unité)** | capteur générique      | un nombre           |
+| **Température (°C)**    | température            | nombre              |
+| **Humidité (%)**        | humidité               | nombre              |
+| **Pourcentage (%)**     | niveau                 | nombre              |
+| **Puissance (W)**       | puissance              | nombre (signé)      |
+| **Énergie (kWh)**       | énergie                | nombre              |
+| **Binaire (oui/non)**   | état de l'entrée (1/0) | voir plus bas       |
+| **Texte**               | texte                  | 250 caractères max. |
+
+**Binaire (oui/non)** : `true`, un nombre autre que 0, `on`, `yes`, `up`,
+`active`, `enabled` (et `oui`, `ja`, `si`) donnent 1 ; `false`, 0, `off`,
+`no`, `down`, `inactive`, `disabled` (et `non`, `nein`) donnent 0. Tout le
+reste est une erreur.
+
+### 4. Ajouter les appareils
+
+Cliquez sur **Tester les capteurs** : chaque capteur est lu tout de suite, et
+la réponse dit ce que chacun donne, ou pourquoi il ne donne rien. Ajoutez
+ensuite les capteurs dans l'onglet **Découverte** de l'intégration.
+
+## Les appareils
+
+Un appareil par capteur, avec deux fonctionnalités :
+
+- la valeur, du type de l'emplacement ;
+- **En erreur** : 1 tant que le capteur échoue, 0 sinon.
+
+Une lecture ratée est retentée 30 secondes plus tard ; le capteur est en
+erreur après deux lectures ratées de suite : une réponse perdue ne change
+rien. La dernière valeur reste en attendant. Le badge de l'appareil indique
+local ou cloud (d'après l'adresse), injoignable tant qu'il est en erreur.
+
+Changer l'adresse, le chemin, le type ou un en-tête d'un emplacement garde
+l'appareil et son historique (l'identité est le numéro de l'emplacement).
+Changer le type ajoute une nouvelle fonctionnalité de valeur : cliquez sur
+**Mettre à jour** dans l'onglet Découverte.
 
 ## Tableau de bord
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+Le widget **Valeurs HTTP** affiche une ligne par capteur : la valeur avec son
+unité, ou « Erreur ». Dans ses réglages, choisissez les capteurs à afficher
+(vide : tous ; seuls les appareils ajoutés à Gladys se choisissent).
+**Actualiser** les relit tout de suite.
+
+## Scènes
+
+### Déclencheurs
+
+- **Un capteur échoue** : deux lectures de suite échouent (pas de réponse,
+  erreur HTTP, valeur introuvable, configuration à corriger). Une fois,
+  jusqu'à ce que le capteur remarche. Filtre : un capteur, ou n'importe
+  lequel. Variables : le nom du capteur, l'erreur, sa clé (`status`,
+  `timeout`, `unreachable`, `tls`, `too_large`, `redirect`, `not_json`,
+  `not_found`, `no_match`, `not_number`, `not_binary`, `empty`, `config`…)
+  et le code HTTP (0 sans réponse).
+- **Une valeur texte change** : un capteur de type **Texte** lit une valeur
+  différente de la précédente (pas à la première lecture, pas après un
+  redémarrage). Variables : le nom du capteur, la nouvelle valeur et la
+  précédente.
+
+Pour un nombre qui franchit un seuil, utilisez la valeur de l'appareil dans
+une condition de scène, comme pour tout capteur.
+
+### Actions
+
+- **Appeler une adresse** : envoie une requête — adresse, méthode (GET, POST,
+  PUT, PATCH, DELETE), en-têtes, corps — où des valeurs de la scène peuvent
+  être insérées (tapez `{{`). Le corps n'est pas envoyé en GET. **En-tête
+  secret du capteur** ajoute l'en-tête secret d'un capteur, **seulement vers l'adresse de ce capteur (même schéma, hôte et port)** : une scène ne peut pas l'envoyer
+  ailleurs (aucun secret ne se saisit dans une scène, tout utilisateur peut
+  les lire). Un chemin de champ ou une expression régulière, facultatif, lit
+  une valeur dans la réponse.
+- **Relire un capteur maintenant** : lit un capteur sans attendre son
+  intervalle, et publie sa valeur.
+
+Les deux donnent aux actions suivantes : **Réussi**, le **Code HTTP (0 : pas
+de réponse)**, la **Valeur lue**, la **Valeur en nombre (0 si aucune)** et
+l'**Erreur** ; **Appeler une adresse** donne aussi la **Réponse (2000
+caractères au plus)**. Une requête ratée n'arrête pas la scène : testez
+**Réussi**.
+
+### Idées de scènes
+
+- Chaque soir à 22 h, **Appeler une adresse**
+  `http://192.168.1.30/relay/0?turn=off` pour éteindre un relais Shelly, puis
+  envoyer un message si **Réussi** est faux.
+- **Un capteur échoue** sur le capteur du NAS : envoyer « NAS : » et la variable
+  **Erreur** sur votre téléphone.
+- Quand l'alarme est armée, **Appeler une adresse** sur un webhook (Node-RED,
+  n8n, Home Assistant) en POST avec le corps `{"alarme": "armée"}`.
+- **Relire un capteur maintenant** la température de la piscine avant de
+  lancer la pompe, puis une condition sur la valeur.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **Champ introuvable dans la réponse** : ouvrez l'adresse dans un
+  navigateur, copiez le chemin jusqu'à la valeur (Firefox affiche le JSON en
+  arbre, « Copier le chemin » est dans le menu contextuel d'une valeur). Les
+  listes se comptent à partir de 0.
+- **La réponse n'est pas du JSON** : l'adresse donne une page ou un texte :
+  utilisez une expression régulière, ou vérifiez l'adresse (une page de
+  connexion ?).
+- **Réponse d'erreur (HTTP 401 ou 403)** : le jeton ou la clé est faux ou
+  absent : remplissez **En-tête secret (jeton)**.
+- **Certificat refusé** : décochez **Vérifier le certificat (https)** pour cet
+  emplacement.
+- **Redirigé vers une autre adresse, refusé** : l'adresse renvoie vers un autre hôte, ou de https vers http (souvent `http://` vers une page de connexion dans le cloud).
+  Saisissez l'adresse finale.
+- **Pas de réponse à temps** : l'adresse met plus de 10 secondes à répondre.
+- **La valeur n'est pas un nombre** : le chemin mène à un texte ou à une
+  liste ; ajustez-le, ou choisissez le type **Texte**.
+- Logs : réglez la variable `LOG_LEVEL=debug` de l'intégration pour voir
+  chaque lecture.
+
+## Limites
+
+- 10 capteurs, une valeur chacun. Pour plusieurs valeurs d'une même réponse,
+  utilisez plusieurs emplacements avec la même adresse.
+- Réponses de 1 Mo au plus, 10 secondes au plus (20 s pour un appel de
+  scène), 3 redirections au plus, sur le même hôte seulement et jamais de https vers http.
+- Ni cookies, ni formulaire de connexion, ni JavaScript : une page construite
+  par JavaScript dans le navigateur ne montre rien ici. Utilisez son API.
+- Pas d'autres unités que celles des types : un nombre dans une autre unité va
+  dans **Nombre (sans unité)**.
+- Respectez les règles des API que vous lisez (quotas, conditions) :
+  l'intervalle est à votre main. Open-Meteo, par exemple, demande moins de
+  10 000 appels par jour.

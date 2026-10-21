@@ -31,16 +31,22 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+index.js                          SDK wiring only: src/app.js registers the handlers before connect()
+src/app.js                        every SDK handler -> the hub (also used by the tests)
+src/hub.js                        reading timer, readings, states (changes + heartbeat), scene events
+src/config.js                     DEFAULT_CONFIG (mirrors the manifest) + the 10 slots, headers, URLs
+src/sensors.js                    sensor types, field paths, regular expressions, conversions
+src/http.js                       node:http/https: size and time caps, same-host redirects, local/cloud
+src/devices.js                    one device per slot: the value feature + "In error"
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
-src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+src/widgets.js                    dashboard widget `values` (manifest `widgets`)
+src/texts.js                      connection, error, report, action texts (4 languages)
+src/store.js                      /data/http-json-state.json (failures announced, last texts)
+src/logs.js                       repeated failures logged once, then once when they heal
+gladys-assistant-integration.json manifest (generated outside the repo: 10 identical slots)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (en and fr mandatory)
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+                                  and an in-memory web (test/helpers/world.js)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +76,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, widget texts, feature names, and
+  `docs/{en,fr,de,es}.md`, kept in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +240,63 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## HTTP / JSON (propre à ce dépôt)
+
+- **Configuration par emplacements** (`sensor_<n>_<champ>`, n = 1 à 10) plutôt que l'action « Ajouter une
+  requête » d'InfluxDB : seul le formulaire de configuration accepte un champ `secret` (Gladys#3154).
+  Identité d'un appareil = **numéro d'emplacement** ; la fonctionnalité de valeur porte le type dans sa clé
+  (`value_<type>`) : changer de type crée une nouvelle fonctionnalité (« Mettre à jour » dans Découverte),
+  jamais un historique de température relu en puissance. Types repris d'InfluxDB, plus `binary`
+  (`input/binary`) et `text` (`text/text`, min/max 0/0, `{ text }`, 250 caractères).
+- **Manifeste de ~86 Ko pour 100 Ko permis par le store** (`MANIFEST_MAX_BYTES`) : 10 × 12 champs en quatre
+  langues. Il est produit par un script hors dépôt (descriptions et exemples sous le capteur 1 seulement,
+  JSON compact passé à Prettier, qui ne garde dépliés que les objets longs). `test/manifest.test.js` le
+  borne à 95 Ko et vérifie que les 10 emplacements sont identiques au code. Ajouter un champ par
+  emplacement coûte ~2 Ko.
+- Une option de `select` ne peut pas avoir `value: ""` (validateur : « must NOT have fewer than 1
+  characters ») : `secret_from` vaut `none` par défaut.
+- **Lecture** : minuteur du conteneur, une échéance par capteur ; une lecture ratée est refaite après
+  30 s (ou l'intervalle s'il est plus court) ; « En erreur » et le déclencheur `request_failed` après
+  **2 échecs de suite** (une erreur de configuration : tout de suite). La dernière valeur reste.
+  `request_failed` une fois par épisode, mémorisé dans `/data` avec la **signature** de l'emplacement
+  (adresse, méthode, en-têtes, corps, chemin, type, échelle) : une nouvelle signature oublie l'annonce et
+  le dernier texte. `text_changed` jamais à la première lecture ni au redémarrage.
+- **HTTP** (`src/http.js`) : délai pour toute la réponse (une réponse qui goutte aussi), 1 Mo coupé à la
+  réception, redirections suivies **sur le même hôte seulement**, jamais de https vers http (3 au plus ; 303, et 301/302 après un
+  POST, repassent en GET) ; une redirection vers un autre hôte est une erreur `redirect` qui nomme l'hôte.
+  Les journaux ne montrent que l'hôte (`hostOf`), jamais le chemin ni la requête (clés d'API).
+- **Expressions régulières** de l'utilisateur exécutées dans `node:vm` avec `timeout` (500 ms) :
+  l'interruption de V8 coupe bien le retour arrière d'une expression catastrophique (`/(a+)+$/`, testé).
+  Les drapeaux `g`/`y` sont refusés (état entre deux exécutions).
+- **Badge** : `local` pour une IP privée (RFC 1918, CGNAT, lien local, plages de documentation RFC 5737),
+  un nom `.local`/`.lan`/`.home`/… ou un nom sans point ; `cloud` sinon.
+- **« Appeler une adresse »** n'a pas de champ secret (refusé dans les scènes, lisibles par tous) :
+  `secret_from` reprend l'en-tête secret d'un capteur, **vers l'origine de ce capteur seulement** (schéma, hôte et port : ni en clair, ni vers un autre service du même hôte) ; un capteur sans en-tête secret fait échouer l'action. Une requête
+  ratée ne lève pas d'erreur (sorties `success`, `status`, `error`) ; seul un champ inutilisable échoue.
+
+## Vérifié dans le bac à sable (21/10/2026)
+
+Image Docker de l'intégration avec les contraintes du bac à sable (`--cap-drop ALL --security-opt
+no-new-privileges --read-only --memory 256m --pids-limit 256`, volume `/data`, réseau en pont
+`gladys-test-http-json`, aucun port publié), contre un serveur de test Node en conteneur (JSON, texte, HTML,
+401 sans jeton, 500, réponse de 15 s, réponse de 3 Mo, redirection vers un autre hôte, 301 sur le même hôte,
+écho d'un POST) et l'API publique Open-Meteo.
+
+- Sans Gladys : reconnexion du SDK en backoff, pas de plantage, aucun secret dans les logs, ~18 Mo au repos.
+- Faux Gladys du SDK dans le conteneur verrouillé, 10 emplacements : filtre JSONPath, index `[-1]`, texte par
+  expression régulière, page HTML (`1&nbsp;234,5 m&sup3;` : a révélé le séparateur de milliers par espace,
+  corrigé), jeton secret (`Bearer`), 401 et 500 (`request_failed` avec le code), délai de 10 s, réponse coupée
+  à 1 Mo, Open-Meteo en HTTPS ; « Appeler une adresse » en POST JSON, 301 suivi, redirection vers un autre
+  hôte refusée et nommée, secret réutilisé vers son hôte puis refusé vers un autre ; « Relire un capteur
+  maintenant », widget. ~80 Mo au pic (réponse de 3 Mo coupée).
+
+## Relecture indépendante (21/10/2026)
+
+Corrigé : la **signature** d'un emplacement (adresse, en-têtes, secret compris) partait en clair dans `/data` :
+elle est hachée (SHA-256) ; au redémarrage pendant une panne annoncée, « En erreur » passait 1 → 0 → 1 (et le
+badge) et relançait les scènes : la lecture est réamorcée en panne ; « Relire un capteur maintenant » et
+« Actualiser » attendaient la fin d'un cycle de capteurs lents (au-delà des 30 s) : lecture directe hors file
+(`readSlots`) ; secret de scène lié à l'**origine** et redirection https → http refusée ; valeurs d'en-tête
+hors Latin-1 ou caractères de contrôle refusées à la configuration (`node:http` lève sinon) ; plus de
+battement de cœur d'une valeur périmée pendant une panne ; appels de scène en debug, échecs une fois par hôte.
