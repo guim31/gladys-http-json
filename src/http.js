@@ -46,6 +46,9 @@ export class HttpError extends Error {
   }
 }
 
+const sizeText = (bytes) =>
+  bytes >= 1024 * 1024 ? `${Math.round(bytes / 1024 / 1024)} MB` : `${Math.round(bytes / 1024)} KB`;
+
 const TLS_CODES =
   /CERT|SSL|TLS|SELF_SIGNED|UNABLE_TO_(GET|VERIFY)|ERR_TLS|EPROTO|HOSTNAME_MISMATCH/i;
 
@@ -92,10 +95,7 @@ function requestOnce(target, { method, headers, body, verifyTls, timeoutMs, maxB
         response.on('data', (chunk) => {
           size += chunk.length;
           if (size > maxBytes) {
-            finish(
-              reject,
-              new HttpError(HTTP_ERRORS.TOO_LARGE, `${Math.round(maxBytes / 1024)} KB`),
-            );
+            finish(reject, new HttpError(HTTP_ERRORS.TOO_LARGE, sizeText(maxBytes)));
             request.destroy();
             return;
           }

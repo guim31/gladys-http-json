@@ -77,9 +77,10 @@ rapport de test.
   demi-seconde est arrêtée.
 - **Vide** : toute la réponse (un appareil qui répond `21.5` ou `ON`).
 
-Un nombre dans un texte est trouvé tout seul : `21,5 °C` donne 21,5. Les
-séparateurs de milliers ne sont pas compris (`1,234.5`) : écrivez une
-expression régulière pour ceux-là.
+Un nombre dans un texte est trouvé tout seul : `21,5 °C` donne 21,5,
+`1 234,5 m³` donne 1234,5. Une virgule ou un point comme séparateur de milliers
+n'est pas compris (`1,234.5`) : écrivez une expression régulière pour
+ceux-là.
 
 ### 3. Choisir le type
 

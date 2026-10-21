@@ -76,9 +76,9 @@ den Testbericht fest.
   Sekunde braucht, wird abgebrochen.
 - **Leer**: die ganze Antwort (ein Gerät, das `21.5` oder `ON` antwortet).
 
-Eine Zahl in einem Text wird von selbst gefunden: `21,5 °C` ergibt 21,5.
-Tausendertrennzeichen werden nicht verstanden (`1,234.5`): Schreib dafür einen
-regulären Ausdruck.
+Eine Zahl in einem Text wird von selbst gefunden: `21,5 °C` ergibt 21,5,
+`1 234,5 m³` ergibt 1234,5. Ein Komma oder Punkt als Tausendertrennzeichen wird
+nicht verstanden (`1,234.5`): Schreib dafür einen regulären Ausdruck.
 
 ### 3. Den Typ wählen
 

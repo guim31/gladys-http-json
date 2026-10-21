@@ -79,7 +79,8 @@ restart.
   page.
 - The units are the ones of the types; a number in another unit goes in
   "Number (no unit)".
-- Thousands separators in a text (`1,234.5`) need a regular expression.
+- A comma or dot as thousands separator (`1,234.5`) needs a regular
+  expression.
 - Respect the terms and quotas of the APIs you read: the interval is yours.
 
 ## Development

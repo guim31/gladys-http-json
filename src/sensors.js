@@ -310,7 +310,8 @@ export function toNumber(value) {
   if (typeof value !== 'string') {
     return null;
   }
-  const match = value.match(NUMBER);
+  // "1 234,5": a space (or a no-break one) before three digits groups thousands.
+  const match = value.replace(/(\d)[ \u00a0\u202f](?=\d{3}(?!\d))/g, '$1').match(NUMBER);
   if (!match) {
     return null;
   }

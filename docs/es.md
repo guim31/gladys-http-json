@@ -76,9 +76,9 @@ informe de prueba.
   detiene.
 - **Vacío**: toda la respuesta (un dispositivo que responde `21.5` u `ON`).
 
-Un número dentro de un texto se encuentra solo: `21,5 °C` da 21,5. Los
-separadores de miles no se entienden (`1,234.5`): escriba una expresión
-regular para ellos.
+Un número dentro de un texto se encuentra solo: `21,5 °C` da 21,5,
+`1 234,5 m³` da 1234,5. Una coma o un punto como separador de miles no se
+entiende (`1,234.5`): escriba una expresión regular para ellos.
 
 ### 3. Elegir el tipo
 

@@ -71,9 +71,9 @@ test report.
   a second is stopped.
 - **Empty**: the whole answer (a device that answers `21.5` or `ON`).
 
-A number in a text is found on its own: `21,5 °C` gives 21.5. Thousands
-separators are not understood (`1,234.5`): write a regular expression for
-those.
+A number in a text is found on its own: `21,5 °C` gives 21.5, `1 234,5 m³`
+gives 1234.5. A comma or a dot as thousands separator is not understood
+(`1,234.5`): write a regular expression for those.
 
 ### 3. Choose the type
 

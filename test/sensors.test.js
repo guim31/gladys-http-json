@@ -78,6 +78,7 @@ test('an HTML page: the text of the match, entities decoded', () => {
   const body = fixture('status-page.html');
   const extraction = parseExtraction('/<td id="water">([^<]+)<\\/td>/');
   assert.equal(extract(extraction, { body, contentType: 'text/html' }), '1 234,5 m³');
+  assert.equal(toNumber(extract(extraction, { body, contentType: 'text/html' })), 1234.5);
   assert.equal(
     htmlText('<b>5&nbsp;&deg;C</b> &amp; &#x41;&#66; &unknown;'),
     ' 5 °C  & AB &unknown;',
@@ -107,6 +108,9 @@ test('numbers: JSON numbers, texts with a unit, a decimal comma', () => {
   assert.equal(toNumber('21,5 °C'), 21.5);
   assert.equal(toNumber('-3.2e2'), -320);
   assert.equal(toNumber('Temperature: 19'), 19);
+  assert.equal(toNumber('1 234,5 m³'), 1234.5, 'a space groups thousands');
+  assert.equal(toNumber('1\u00a0234\u202f567'), 1234567);
+  assert.equal(toNumber('12 1234'), 12, 'not a group of three');
   assert.equal(toNumber(true), 1);
   assert.equal(toNumber('none'), null);
   assert.equal(toNumber({}), null);
