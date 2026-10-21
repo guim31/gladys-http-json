@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-21
+
 ### Added
 
 - Up to 10 HTTP sensors, one per slot of the configuration: address, method
@@ -31,3 +33,6 @@ the notes of the version's GitHub Release.
   and the value read as outputs) and "Read a sensor now".
 - Answers capped at 1 MB and 10 seconds, redirects followed on the same host only, never from https to http.
 - English, French, German and Spanish everywhere, documentation included.
+
+[Unreleased]: https://github.com/guim31/gladys-http-json/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-http-json/releases/tag/v1.0.0
