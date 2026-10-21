@@ -1,177 +1,2936 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "HTTP / JSON sensors",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Any JSON API, text or web page as a Gladys sensor, and HTTP calls from your scenes.",
+    "fr": "Une API JSON, un texte ou une page web en capteur Gladys, et des appels HTTP depuis vos scènes.",
+    "de": "Jede JSON-API, jeder Text oder jede Webseite als Gladys-Sensor, dazu HTTP-Aufrufe aus Szenen.",
+    "es": "Cualquier API JSON, texto o página web como sensor de Gladys, y llamadas HTTP desde sus escenas."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-http-json:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-http-json/main/cover.png",
+  "categories": ["services"],
   "transports": ["local", "cloud"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "HTTP / JSON sensors",
+        "fr": "Capteurs HTTP / JSON",
+        "de": "HTTP-/JSON-Sensoren",
+        "es": "Sensores HTTP / JSON"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Up to 10 sensors, one per slot: an address, and where the value is in the answer. Each sensor becomes a device in the Discovery tab. An empty address leaves the slot unused. The fields are explained under sensor 1.",
+        "fr": "Jusqu'à 10 capteurs, un par emplacement : une adresse, et où se trouve la valeur dans la réponse. Chaque capteur devient un appareil dans l'onglet Découverte. Une adresse vide laisse l'emplacement libre. Les champs sont expliqués sous le capteur 1.",
+        "de": "Bis zu 10 Sensoren, einer pro Platz: eine Adresse und wo der Wert in der Antwort steht. Jeder Sensor wird ein Gerät im Tab „Entdecken“. Eine leere Adresse lässt den Platz frei. Die Felder sind unter Sensor 1 erklärt.",
+        "es": "Hasta 10 sensores, uno por ranura: una dirección, y dónde está el valor en la respuesta. Cada sensor se convierte en un dispositivo en la pestaña Descubrir. Una dirección vacía deja la ranura libre. Los campos se explican en el sensor 1."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-http-json/blob/main/docs/en.md",
+          "label": {
+            "en": "Documentation and examples",
+            "fr": "Documentation et exemples",
+            "de": "Dokumentation und Beispiele",
+            "es": "Documentación y ejemplos"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "key": "sensor_1",
+      "type": "section",
+      "label": { "en": "Sensor 1", "fr": "Capteur 1", "de": "Sensor 1", "es": "Sensor 1" }
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
+      "key": "sensor_1_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" },
       "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+        "en": "Name of the device. Empty: “HTTP sensor N”.",
+        "fr": "Nom de l'appareil. Vide : « Capteur HTTP N ».",
+        "de": "Name des Geräts. Leer: „HTTP-Sensor N“.",
+        "es": "Nombre del dispositivo. Vacío: «Sensor HTTP N»."
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "placeholder": {
+        "en": "e.g. Outdoor temperature",
+        "fr": "ex. Température extérieure",
+        "de": "z. B. Außentemperatur",
+        "es": "p. ej. Temperatura exterior"
+      }
     },
     {
-      "key": "unit",
+      "key": "sensor_1_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      },
+      "description": {
+        "en": "http:// or https://, local addresses included.",
+        "fr": "http:// ou https://, adresses locales comprises.",
+        "de": "http:// oder https://, lokale Adressen inklusive.",
+        "es": "http:// o https://, direcciones locales incluidas."
+      },
+      "placeholder": {
+        "en": "http://192.168.1.20/api/status",
+        "fr": "http://192.168.1.20/api/status",
+        "de": "http://192.168.1.20/api/status",
+        "es": "http://192.168.1.20/api/status"
+      }
+    },
+    {
+      "key": "sensor_1_method",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "sensor_1_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "One “Name: value” per line, or separated by “ | ”.",
+        "fr": "Un « Nom: valeur » par ligne, ou séparés par « | ».",
+        "de": "Ein „Name: Wert“ pro Zeile oder mit „ | “ getrennt.",
+        "es": "Un «Nombre: valor» por línea, o separados por « | »."
       },
-      "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "placeholder": {
+        "en": "Accept: application/json",
+        "fr": "Accept: application/json",
+        "de": "Accept: application/json",
+        "es": "Accept: application/json"
+      }
+    },
+    {
+      "key": "sensor_1_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      },
+      "description": {
+        "en": "A token alone is sent as “Authorization: Bearer …”. Or a whole header: “X-Api-Key: …”. Never shown in the logs.",
+        "fr": "Un jeton seul part en « Authorization: Bearer … ». Ou un en-tête entier : « X-Api-Key: … ». Jamais dans les logs.",
+        "de": "Ein Token allein wird als „Authorization: Bearer …“ gesendet. Oder ein ganzer Header: „X-Api-Key: …“. Nie in den Protokollen.",
+        "es": "Un token solo se envía como «Authorization: Bearer …». O una cabecera entera: «X-Api-Key: …». Nunca en los registros."
+      }
+    },
+    {
+      "key": "sensor_1_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      },
+      "description": {
+        "en": "Sent with POST only. JSON is sent as application/json.",
+        "fr": "Envoyé en POST seulement. Du JSON part en application/json.",
+        "de": "Nur bei POST gesendet. JSON geht als application/json.",
+        "es": "Solo se envía con POST. El JSON se envía como application/json."
+      },
+      "placeholder": {
+        "en": "{\"query\": \"status\"}",
+        "fr": "{\"query\": \"status\"}",
+        "de": "{\"query\": \"status\"}",
+        "es": "{\"query\": \"status\"}"
+      }
+    },
+    {
+      "key": "sensor_1_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      },
+      "description": {
+        "en": "JSON: data.items[0].temp. Text or HTML page: /Temp: ([0-9.]+)/ (first group). Empty: the whole answer.",
+        "fr": "JSON : data.items[0].temp. Texte ou page HTML : /Temp: ([0-9.]+)/ (premier groupe). Vide : toute la réponse.",
+        "de": "JSON: data.items[0].temp. Text oder HTML-Seite: /Temp: ([0-9.]+)/ (erste Gruppe). Leer: die ganze Antwort.",
+        "es": "JSON: data.items[0].temp. Texto o página HTML: /Temp: ([0-9.]+)/ (primer grupo). Vacío: toda la respuesta."
+      },
+      "placeholder": {
+        "en": "data.items[0].temp",
+        "fr": "data.items[0].temp",
+        "de": "data.items[0].temp",
+        "es": "data.items[0].temp"
+      }
+    },
+    {
+      "key": "sensor_1_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_1_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      },
+      "description": {
+        "en": "Numbers only. Empty: 1. E.g. 0.001 for Wh to kWh.",
+        "fr": "Nombres seulement. Vide : 1. Ex. 0,001 pour des Wh en kWh.",
+        "de": "Nur Zahlen. Leer: 1. Z. B. 0,001 für Wh in kWh.",
+        "es": "Solo números. Vacío: 1. P. ej. 0,001 para Wh a kWh."
+      },
+      "placeholder": { "en": "1", "fr": "1", "de": "1", "es": "1" }
+    },
+    {
+      "key": "sensor_1_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" },
+      "description": {
+        "en": "Added after the multiplier. Empty: 0.",
+        "fr": "Ajouté après le multiplicateur. Vide : 0.",
+        "de": "Nach dem Multiplikator addiert. Leer: 0.",
+        "es": "Se suma tras el multiplicador. Vacío: 0."
+      },
+      "placeholder": { "en": "0", "fr": "0", "de": "0", "es": "0" }
+    },
+    {
+      "key": "sensor_1_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_1_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "description": {
+        "en": "Untick for a device with a self-signed certificate.",
+        "fr": "Décochez pour un appareil au certificat auto-signé.",
+        "de": "Deaktivieren bei einem Gerät mit selbstsigniertem Zertifikat.",
+        "es": "Desmarque para un dispositivo con certificado autofirmado."
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_2",
+      "type": "section",
+      "label": { "en": "Sensor 2", "fr": "Capteur 2", "de": "Sensor 2", "es": "Sensor 2" }
+    },
+    {
+      "key": "sensor_2_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_2_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_2_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_2_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_2_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_2_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_2_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_2_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_2_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_2_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_2_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_2_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_3",
+      "type": "section",
+      "label": { "en": "Sensor 3", "fr": "Capteur 3", "de": "Sensor 3", "es": "Sensor 3" }
+    },
+    {
+      "key": "sensor_3_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_3_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_3_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_3_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_3_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_3_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_3_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_3_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_3_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_3_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_3_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_3_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_4",
+      "type": "section",
+      "label": { "en": "Sensor 4", "fr": "Capteur 4", "de": "Sensor 4", "es": "Sensor 4" }
+    },
+    {
+      "key": "sensor_4_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_4_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_4_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_4_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_4_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_4_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_4_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_4_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_4_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_4_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_4_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_4_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_5",
+      "type": "section",
+      "label": { "en": "Sensor 5", "fr": "Capteur 5", "de": "Sensor 5", "es": "Sensor 5" }
+    },
+    {
+      "key": "sensor_5_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_5_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_5_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_5_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_5_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_5_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_5_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_5_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_5_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_5_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_5_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_5_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_6",
+      "type": "section",
+      "label": { "en": "Sensor 6", "fr": "Capteur 6", "de": "Sensor 6", "es": "Sensor 6" }
+    },
+    {
+      "key": "sensor_6_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_6_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_6_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_6_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_6_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_6_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_6_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_6_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_6_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_6_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_6_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_6_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_7",
+      "type": "section",
+      "label": { "en": "Sensor 7", "fr": "Capteur 7", "de": "Sensor 7", "es": "Sensor 7" }
+    },
+    {
+      "key": "sensor_7_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_7_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_7_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_7_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_7_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_7_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_7_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_7_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_7_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_7_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_7_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_7_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_8",
+      "type": "section",
+      "label": { "en": "Sensor 8", "fr": "Capteur 8", "de": "Sensor 8", "es": "Sensor 8" }
+    },
+    {
+      "key": "sensor_8_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_8_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_8_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_8_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_8_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_8_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_8_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_8_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_8_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_8_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_8_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_8_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_9",
+      "type": "section",
+      "label": { "en": "Sensor 9", "fr": "Capteur 9", "de": "Sensor 9", "es": "Sensor 9" }
+    },
+    {
+      "key": "sensor_9_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_9_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_9_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_9_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_9_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_9_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_9_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_9_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_9_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_9_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_9_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_9_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "sensor_10",
+      "type": "section",
+      "label": { "en": "Sensor 10", "fr": "Capteur 10", "de": "Sensor 10", "es": "Sensor 10" }
+    },
+    {
+      "key": "sensor_10_name",
+      "type": "string",
+      "label": { "en": "Name", "fr": "Nom", "de": "Name", "es": "Nombre" }
+    },
+    {
+      "key": "sensor_10_url",
+      "type": "string",
+      "label": {
+        "en": "Address (URL)",
+        "fr": "Adresse (URL)",
+        "de": "Adresse (URL)",
+        "es": "Dirección (URL)"
+      }
+    },
+    {
+      "key": "sensor_10_method",
+      "type": "select",
+      "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+      "default": "GET",
+      "options": [
+        { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+        { "value": "POST", "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" } }
+      ]
+    },
+    {
+      "key": "sensor_10_headers",
+      "type": "string",
+      "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" }
+    },
+    {
+      "key": "sensor_10_secret",
+      "type": "secret",
+      "label": {
+        "en": "Secret header (token)",
+        "fr": "En-tête secret (jeton)",
+        "de": "Geheimer Header (Token)",
+        "es": "Cabecera secreta (token)"
+      }
+    },
+    {
+      "key": "sensor_10_body",
+      "type": "string",
+      "label": {
+        "en": "Body (POST)",
+        "fr": "Corps (POST)",
+        "de": "Inhalt (POST)",
+        "es": "Cuerpo (POST)"
+      }
+    },
+    {
+      "key": "sensor_10_path",
+      "type": "string",
+      "label": {
+        "en": "Field path or /regular expression/",
+        "fr": "Chemin du champ ou /expression régulière/",
+        "de": "Feldpfad oder /regulärer Ausdruck/",
+        "es": "Ruta del campo o /expresión regular/"
+      }
+    },
+    {
+      "key": "sensor_10_type",
+      "type": "select",
+      "label": { "en": "Type", "fr": "Type", "de": "Typ", "es": "Tipo" },
+      "default": "number",
+      "options": [
+        {
+          "value": "number",
+          "label": {
+            "en": "Number (no unit)",
+            "fr": "Nombre (sans unité)",
+            "de": "Zahl (ohne Einheit)",
+            "es": "Número (sin unidad)"
+          }
+        },
+        {
+          "value": "temperature",
+          "label": {
+            "en": "Temperature (°C)",
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
+          }
+        },
+        {
+          "value": "humidity",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Luftfeuchtigkeit (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "value": "percent",
+          "label": {
+            "en": "Percentage (%)",
+            "fr": "Pourcentage (%)",
+            "de": "Prozent (%)",
+            "es": "Porcentaje (%)"
+          }
+        },
+        {
+          "value": "power",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
+        },
+        {
+          "value": "energy",
+          "label": {
+            "en": "Energy (kWh)",
+            "fr": "Énergie (kWh)",
+            "de": "Energie (kWh)",
+            "es": "Energía (kWh)"
+          }
+        },
+        {
+          "value": "binary",
+          "label": {
+            "en": "Binary (on/off)",
+            "fr": "Binaire (oui/non)",
+            "de": "Binär (an/aus)",
+            "es": "Binario (sí/no)"
+          }
+        },
+        { "value": "text", "label": { "en": "Text", "fr": "Texte", "de": "Text", "es": "Texto" } }
+      ]
+    },
+    {
+      "key": "sensor_10_scale",
+      "type": "string",
+      "label": {
+        "en": "Multiplier",
+        "fr": "Multiplicateur",
+        "de": "Multiplikator",
+        "es": "Multiplicador"
+      }
+    },
+    {
+      "key": "sensor_10_offset",
+      "type": "string",
+      "label": { "en": "Offset", "fr": "Décalage", "de": "Verschiebung", "es": "Desplazamiento" }
+    },
+    {
+      "key": "sensor_10_interval",
+      "type": "select",
+      "label": {
+        "en": "Reading interval",
+        "fr": "Intervalle de lecture",
+        "de": "Leseintervall",
+        "es": "Intervalo de lectura"
+      },
+      "default": "60",
+      "options": [
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "1800",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "3600",
+          "label": { "en": "1 hour", "fr": "1 heure", "de": "1 Stunde", "es": "1 hora" }
+        }
+      ]
+    },
+    {
+      "key": "sensor_10_verify_tls",
+      "type": "boolean",
+      "label": {
+        "en": "Check the certificate (https)",
+        "fr": "Vérifier le certificat (https)",
+        "de": "Zertifikat prüfen (https)",
+        "es": "Verificar el certificado (https)"
+      },
+      "default": true
+    },
+    {
+      "key": "options",
+      "type": "section",
+      "label": { "en": "Options", "fr": "Options", "de": "Optionen", "es": "Opciones" }
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the names and messages",
+        "fr": "Langue des noms et des messages",
+        "de": "Sprache der Namen und Meldungen",
+        "es": "Idioma de los nombres y mensajes"
+      },
+      "description": {
+        "en": "Device feature names (set when the device is added), scene variables, test report.",
+        "fr": "Noms des fonctionnalités (fixés à l'ajout de l'appareil), variables de scène, rapport de test.",
+        "de": "Namen der Funktionen (beim Hinzufügen festgelegt), Szenenvariablen, Testbericht.",
+        "es": "Nombres de las funciones (fijados al añadir el dispositivo), variables de escena, informe de prueba."
+      },
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": { "en": "English", "fr": "Anglais", "de": "Englisch", "es": "Inglés" }
+        },
+        {
+          "value": "fr",
+          "label": { "en": "French", "fr": "Français", "de": "Französisch", "es": "Francés" }
+        },
+        {
+          "value": "de",
+          "label": { "en": "German", "fr": "Allemand", "de": "Deutsch", "es": "Alemán" }
+        },
+        {
+          "value": "es",
+          "label": { "en": "Spanish", "fr": "Espagnol", "de": "Spanisch", "es": "Español" }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
+      "key": "test_sensors",
+      "label": {
+        "en": "Test the sensors",
+        "fr": "Tester les capteurs",
+        "de": "Sensoren testen",
+        "es": "Probar los sensores"
+      },
+      "description": {
+        "en": "Reads every sensor now and says what each one gives.",
+        "fr": "Lit tous les capteurs maintenant et dit ce que chacun donne.",
+        "de": "Liest jetzt alle Sensoren und zeigt, was jeder liefert.",
+        "es": "Lee ahora todos los sensores e indica lo que da cada uno."
+      },
+      "timeout_seconds": 60
+    }
+  ],
+  "widgets": [
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
+      "key": "values",
+      "label": {
+        "en": "HTTP values",
+        "fr": "Valeurs HTTP",
+        "de": "HTTP-Werte",
+        "es": "Valores HTTP"
+      },
+      "description": {
+        "en": "The last value of each sensor, one row per sensor.",
+        "fr": "La dernière valeur de chaque capteur, une ligne par capteur.",
+        "de": "Der letzte Wert jedes Sensors, eine Zeile pro Sensor.",
+        "es": "El último valor de cada sensor, una fila por sensor."
+      },
+      "icon": "globe",
+      "action_timeout_seconds": 30,
+      "settings": [
         {
-          "key": "device",
-          "type": "select",
+          "key": "sensors",
+          "type": "multi_select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "label": {
+            "en": "Sensors (empty: all)",
+            "fr": "Capteurs (vide : tous)",
+            "de": "Sensoren (leer: alle)",
+            "es": "Sensores (vacío: todos)"
+          },
+          "description": {
+            "en": "Only the devices added to Gladys can be chosen.",
+            "fr": "Seuls les appareils ajoutés à Gladys se choisissent.",
+            "de": "Nur die in Gladys angelegten Geräte sind wählbar.",
+            "es": "Solo se pueden elegir los dispositivos añadidos a Gladys."
+          },
+          "required": false
         }
       ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "request_failed",
+      "label": {
+        "en": "A sensor fails",
+        "fr": "Un capteur échoue",
+        "de": "Ein Sensor scheitert",
+        "es": "Un sensor falla"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "Two readings in a row fail: no answer, HTTP error, value not found. Once, until it works again.",
+        "fr": "Deux lectures de suite échouent : pas de réponse, erreur HTTP, valeur introuvable. Une fois, jusqu'à ce qu'il remarche.",
+        "de": "Zwei Lesevorgänge nacheinander scheitern: keine Antwort, HTTP-Fehler, Wert fehlt. Einmal, bis er wieder geht.",
+        "es": "Fallan dos lecturas seguidas: sin respuesta, error HTTP, valor no encontrado. Una vez, hasta que vuelva a funcionar."
       },
       "fields": [
         {
-          "key": "device",
+          "key": "sensor",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "label": {
+            "en": "Sensor (empty: any)",
+            "fr": "Capteur (vide : n'importe lequel)",
+            "de": "Sensor (leer: beliebig)",
+            "es": "Sensor (vacío: cualquiera)"
+          },
+          "required": false
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Sensor name",
+            "fr": "Nom du capteur",
+            "de": "Name des Sensors",
+            "es": "Nombre del sensor"
+          }
+        },
+        {
+          "key": "error",
+          "type": "string",
+          "label": { "en": "Error", "fr": "Erreur", "de": "Fehler", "es": "Error" }
+        },
+        {
+          "key": "error_kind",
+          "type": "string",
+          "label": {
+            "en": "Error key (status, timeout, not_found…)",
+            "fr": "Clé de l'erreur (status, timeout, not_found…)",
+            "de": "Fehlerschlüssel (status, timeout, not_found…)",
+            "es": "Clave del error (status, timeout, not_found…)"
+          }
+        },
+        {
+          "key": "status",
+          "type": "number",
+          "label": {
+            "en": "HTTP code (0: no answer)",
+            "fr": "Code HTTP (0 : pas de réponse)",
+            "de": "HTTP-Code (0: keine Antwort)",
+            "es": "Código HTTP (0: sin respuesta)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "text_changed",
+      "label": {
+        "en": "A text value changes",
+        "fr": "Une valeur texte change",
+        "de": "Ein Textwert ändert sich",
+        "es": "Un valor de texto cambia"
+      },
+      "description": {
+        "en": "A sensor of type Text reads a value different from the last one.",
+        "fr": "Un capteur de type Texte lit une valeur différente de la précédente.",
+        "de": "Ein Sensor vom Typ Text liest einen anderen Wert als zuletzt.",
+        "es": "Un sensor de tipo Texto lee un valor distinto del anterior."
+      },
+      "fields": [
+        {
+          "key": "sensor",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Sensor (empty: any)",
+            "fr": "Capteur (vide : n'importe lequel)",
+            "de": "Sensor (leer: beliebig)",
+            "es": "Sensor (vacío: cualquiera)"
+          },
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "name",
+          "type": "string",
+          "label": {
+            "en": "Sensor name",
+            "fr": "Nom du capteur",
+            "de": "Name des Sensors",
+            "es": "Nombre del sensor"
+          }
+        },
+        {
+          "key": "value",
+          "type": "string",
+          "label": {
+            "en": "New value",
+            "fr": "Nouvelle valeur",
+            "de": "Neuer Wert",
+            "es": "Nuevo valor"
+          }
+        },
+        {
+          "key": "previous",
+          "type": "string",
+          "label": {
+            "en": "Previous value",
+            "fr": "Valeur précédente",
+            "de": "Vorheriger Wert",
+            "es": "Valor anterior"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "call_url",
+      "label": {
+        "en": "Call an address",
+        "fr": "Appeler une adresse",
+        "de": "Adresse aufrufen",
+        "es": "Llamar a una dirección"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Sends an HTTP request (scene values allowed) and hands the answer to the next actions.",
+        "fr": "Envoie une requête HTTP (valeurs de scène possibles) et passe la réponse aux actions suivantes.",
+        "de": "Sendet eine HTTP-Anfrage (Szenenwerte möglich) und gibt die Antwort an die nächsten Aktionen weiter.",
+        "es": "Envía una petición HTTP (valores de escena posibles) y pasa la respuesta a las acciones siguientes."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
-          "key": "device",
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Address (URL)",
+            "fr": "Adresse (URL)",
+            "de": "Adresse (URL)",
+            "es": "Dirección (URL)"
+          },
+          "placeholder": {
+            "en": "http://192.168.1.30/relay/0?turn=on",
+            "fr": "http://192.168.1.30/relay/0?turn=on",
+            "de": "http://192.168.1.30/relay/0?turn=on",
+            "es": "http://192.168.1.30/relay/0?turn=on"
+          },
+          "required": true
+        },
+        {
+          "key": "method",
+          "type": "select",
+          "label": { "en": "Method", "fr": "Méthode", "de": "Methode", "es": "Método" },
+          "default": "GET",
+          "options": [
+            { "value": "GET", "label": { "en": "GET", "fr": "GET", "de": "GET", "es": "GET" } },
+            {
+              "value": "POST",
+              "label": { "en": "POST", "fr": "POST", "de": "POST", "es": "POST" }
+            },
+            { "value": "PUT", "label": { "en": "PUT", "fr": "PUT", "de": "PUT", "es": "PUT" } },
+            {
+              "value": "PATCH",
+              "label": { "en": "PATCH", "fr": "PATCH", "de": "PATCH", "es": "PATCH" }
+            },
+            {
+              "value": "DELETE",
+              "label": { "en": "DELETE", "fr": "DELETE", "de": "DELETE", "es": "DELETE" }
+            }
+          ]
+        },
+        {
+          "key": "headers",
+          "type": "string",
+          "label": { "en": "Headers", "fr": "En-têtes", "de": "Header", "es": "Cabeceras" },
+          "description": {
+            "en": "One “Name: value” per line, or separated by “ | ”.",
+            "fr": "Un « Nom: valeur » par ligne, ou séparés par « | ».",
+            "de": "Ein „Name: Wert“ pro Zeile oder mit „ | “ getrennt.",
+            "es": "Un «Nombre: valor» por línea, o separados por « | »."
+          },
+          "required": false
+        },
+        {
+          "key": "body",
+          "type": "string",
+          "label": { "en": "Body", "fr": "Corps", "de": "Inhalt", "es": "Cuerpo" },
+          "description": {
+            "en": "Not sent with GET. JSON is sent as application/json.",
+            "fr": "Pas envoyé en GET. Du JSON part en application/json.",
+            "de": "Bei GET nicht gesendet. JSON geht als application/json.",
+            "es": "No se envía con GET. El JSON se envía como application/json."
+          },
+          "required": false
+        },
+        {
+          "key": "secret_from",
+          "type": "select",
+          "label": {
+            "en": "Secret header of sensor",
+            "fr": "En-tête secret du capteur",
+            "de": "Geheimer Header von Sensor",
+            "es": "Cabecera secreta del sensor"
+          },
+          "description": {
+            "en": "Sent only if the address is on the host of that sensor.",
+            "fr": "Envoyé seulement si l'adresse est sur l'hôte de ce capteur.",
+            "de": "Nur gesendet, wenn die Adresse auf dem Host dieses Sensors liegt.",
+            "es": "Solo se envía si la dirección está en el host de ese sensor."
+          },
+          "default": "none",
+          "options": [
+            {
+              "value": "none",
+              "label": { "en": "None", "fr": "Aucun", "de": "Keiner", "es": "Ninguno" }
+            },
+            {
+              "value": "1",
+              "label": { "en": "Sensor 1", "fr": "Capteur 1", "de": "Sensor 1", "es": "Sensor 1" }
+            },
+            {
+              "value": "2",
+              "label": { "en": "Sensor 2", "fr": "Capteur 2", "de": "Sensor 2", "es": "Sensor 2" }
+            },
+            {
+              "value": "3",
+              "label": { "en": "Sensor 3", "fr": "Capteur 3", "de": "Sensor 3", "es": "Sensor 3" }
+            },
+            {
+              "value": "4",
+              "label": { "en": "Sensor 4", "fr": "Capteur 4", "de": "Sensor 4", "es": "Sensor 4" }
+            },
+            {
+              "value": "5",
+              "label": { "en": "Sensor 5", "fr": "Capteur 5", "de": "Sensor 5", "es": "Sensor 5" }
+            },
+            {
+              "value": "6",
+              "label": { "en": "Sensor 6", "fr": "Capteur 6", "de": "Sensor 6", "es": "Sensor 6" }
+            },
+            {
+              "value": "7",
+              "label": { "en": "Sensor 7", "fr": "Capteur 7", "de": "Sensor 7", "es": "Sensor 7" }
+            },
+            {
+              "value": "8",
+              "label": { "en": "Sensor 8", "fr": "Capteur 8", "de": "Sensor 8", "es": "Sensor 8" }
+            },
+            {
+              "value": "9",
+              "label": { "en": "Sensor 9", "fr": "Capteur 9", "de": "Sensor 9", "es": "Sensor 9" }
+            },
+            {
+              "value": "10",
+              "label": {
+                "en": "Sensor 10",
+                "fr": "Capteur 10",
+                "de": "Sensor 10",
+                "es": "Sensor 10"
+              }
+            }
+          ]
+        },
+        {
+          "key": "path",
+          "type": "string",
+          "label": {
+            "en": "Field path or /regular expression/",
+            "fr": "Chemin du champ ou /expression régulière/",
+            "de": "Feldpfad oder /regulärer Ausdruck/",
+            "es": "Ruta del campo o /expresión regular/"
+          },
+          "description": {
+            "en": "What to read in the answer, as for a sensor. Empty: the whole answer.",
+            "fr": "Ce qu'il faut lire dans la réponse, comme pour un capteur. Vide : toute la réponse.",
+            "de": "Was in der Antwort gelesen wird, wie bei einem Sensor. Leer: die ganze Antwort.",
+            "es": "Lo que se lee en la respuesta, como para un sensor. Vacío: toda la respuesta."
+          },
+          "required": false
+        },
+        {
+          "key": "verify_tls",
+          "type": "boolean",
+          "label": {
+            "en": "Check the certificate (https)",
+            "fr": "Vérifier le certificat (https)",
+            "de": "Zertifikat prüfen (https)",
+            "es": "Verificar el certificado (https)"
+          },
+          "default": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "success",
+          "type": "boolean",
+          "label": { "en": "Succeeded", "fr": "Réussi", "de": "Erfolgreich", "es": "Correcto" }
+        },
+        {
+          "key": "status",
+          "type": "number",
+          "label": {
+            "en": "HTTP code (0: no answer)",
+            "fr": "Code HTTP (0 : pas de réponse)",
+            "de": "HTTP-Code (0: keine Antwort)",
+            "es": "Código HTTP (0: sin respuesta)"
+          }
+        },
+        {
+          "key": "value",
+          "type": "string",
+          "label": {
+            "en": "Value read",
+            "fr": "Valeur lue",
+            "de": "Gelesener Wert",
+            "es": "Valor leído"
+          }
+        },
+        {
+          "key": "number",
+          "type": "number",
+          "label": {
+            "en": "Value as a number (0 if none)",
+            "fr": "Valeur en nombre (0 si aucune)",
+            "de": "Wert als Zahl (0 wenn keiner)",
+            "es": "Valor como número (0 si ninguno)"
+          }
+        },
+        {
+          "key": "error",
+          "type": "string",
+          "label": { "en": "Error", "fr": "Erreur", "de": "Fehler", "es": "Error" }
+        },
+        {
+          "key": "response",
+          "type": "string",
+          "label": {
+            "en": "Answer (2000 characters at most)",
+            "fr": "Réponse (2000 caractères au plus)",
+            "de": "Antwort (höchstens 2000 Zeichen)",
+            "es": "Respuesta (2000 caracteres como máximo)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "read_sensor",
+      "label": {
+        "en": "Read a sensor now",
+        "fr": "Relire un capteur maintenant",
+        "de": "Sensor jetzt lesen",
+        "es": "Leer un sensor ahora"
+      },
+      "description": {
+        "en": "Reads a sensor without waiting for its interval, and gives its value.",
+        "fr": "Lit un capteur sans attendre son intervalle, et donne sa valeur.",
+        "de": "Liest einen Sensor, ohne auf sein Intervall zu warten, und liefert den Wert.",
+        "es": "Lee un sensor sin esperar a su intervalo y da su valor."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "sensor",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": { "en": "Sensor", "fr": "Capteur", "de": "Sensor", "es": "Sensor" },
           "required": true
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "success",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": { "en": "Succeeded", "fr": "Réussi", "de": "Erfolgreich", "es": "Correcto" }
+        },
+        {
+          "key": "status",
+          "type": "number",
+          "label": {
+            "en": "HTTP code (0: no answer)",
+            "fr": "Code HTTP (0 : pas de réponse)",
+            "de": "HTTP-Code (0: keine Antwort)",
+            "es": "Código HTTP (0: sin respuesta)"
+          }
+        },
+        {
+          "key": "value",
+          "type": "string",
+          "label": {
+            "en": "Value read",
+            "fr": "Valeur lue",
+            "de": "Gelesener Wert",
+            "es": "Valor leído"
+          }
+        },
+        {
+          "key": "number",
+          "type": "number",
+          "label": {
+            "en": "Value as a number (0 if none)",
+            "fr": "Valeur en nombre (0 si aucune)",
+            "de": "Wert als Zahl (0 wenn keiner)",
+            "es": "Valor como número (0 si ninguno)"
+          }
+        },
+        {
+          "key": "error",
+          "type": "string",
+          "label": { "en": "Error", "fr": "Erreur", "de": "Fehler", "es": "Error" }
         }
       ]
-    }
-  ],
-  "widgets": [
-    {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
-      },
-      "icon": "activity",
-      "action_timeout_seconds": 15
     }
   ]
 }

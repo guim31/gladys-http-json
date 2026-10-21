@@ -1,61 +1,200 @@
-# Demo Devices Template
+# HTTP / JSON sensors
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Turn any address that answers over HTTP into a Gladys sensor: a JSON API (a
+router, a NAS, a solar inverter, a smart plug, a public API), a plain text
+answer, or a web page. You say where the value is in the answer, and its type
+(temperature, power, energy, on/off, text…): it becomes a device, read at the
+interval you choose. Your scenes can also call any address, with scene values
+in it, and use the answer in the next steps.
 
-## What you get
+This is the Gladys counterpart of the `rest` and `scrape` integrations of Home
+Assistant. Nothing is written anywhere but to the addresses you type.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+Tested with a test web server (JSON, text, HTML, 401 and 500 errors, slow and
+oversized answers, redirects) and the public Open-Meteo API, in the locked
+container of Gladys. Feedback welcome:
+[github.com/guim31/gladys-http-json/issues](https://github.com/guim31/gladys-http-json/issues).
 
-## Configuration
+## What you need
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+- Gladys Assistant 5.1.0 or later.
+- An address the Gladys machine can reach: on your local network (private
+  addresses are allowed, they are the main use) or on the Internet.
+- If the address needs it, its token or key (see **Secret header (token)**).
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+## Getting started
 
-## Actions
+### 1. Fill in a slot
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+The configuration has 10 slots, **Sensor 1** to **Sensor 10**. A slot with an
+**Address (URL)** is a sensor; an empty address leaves the slot unused. Each
+slot has these fields:
 
-## Scenes
+- **Name**: the name of the device (empty: "HTTP sensor 3").
+- **Address (URL)**: `http://` or `https://`, e.g.
+  `http://192.168.1.20/api/status`. Without a scheme, `http://` is used. A
+  user and password in the address are refused: use the secret header.
+- **Method**: GET or POST.
+- **Headers**: one `Name: value` per line, or several separated by `|`, e.g.
+  `Accept: application/json | X-Room: pool`.
+- **Secret header (token)**: never shown again, never written in the logs.
+  A token alone is sent as `Authorization: Bearer <token>`; `Basic …` or
+  `Token …` are sent as typed after `Authorization:`; a whole header such as
+  `X-Api-Key: abc123` is sent as is.
+- **Body (POST)**: sent with POST only; JSON is sent as `application/json`,
+  anything else as text.
+- **Field path or /regular expression/**: where the value is (next section).
+- **Type**: what the value is (below).
+- **Multiplier** and **Offset**: for numbers, value × multiplier + offset
+  (e.g. `0.001` to turn Wh into kWh, `0.1` for tenths of a degree). A decimal
+  comma is accepted. Empty: 1 and 0.
+- **Reading interval**: from 30 seconds to 1 hour.
+- **Check the certificate (https)**: on by default; untick it for a device
+  with a self-signed certificate.
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+Under **Options**, **Language of the names and messages** sets the names of
+the features (fixed when the device is added), the scene variables and the
+test report.
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+### 2. Say where the value is
+
+- **A JSON answer**: a field path. `data.temp`, `sensors[0].value`,
+  `items[-1].price` (the last one), `['key with.dots']`, or the JSONPath
+  forms `$.data.temp` and `items[?(@.name=='kitchen')].temp` (the first
+  element whose `name` is `kitchen`; `==` and `!=`, texts in quotes, numbers,
+  `true`, `false`, `null`).
+- **A text answer or a web page**: a regular expression between slashes,
+  e.g. `/Temperature: ([0-9.,]+)/`. The first group in brackets is the value
+  (the whole match without a group). Flags after the last slash: `i` (case),
+  `s`, `m`, `u`. For a web page, tags are removed from the value and the usual
+  entities (`&nbsp;`, `&deg;`…) decoded. An expression taking more than half
+  a second is stopped.
+- **Empty**: the whole answer (a device that answers `21.5` or `ON`).
+
+A number in a text is found on its own: `21,5 °C` gives 21.5. Thousands
+separators are not understood (`1,234.5`): write a regular expression for
+those.
+
+### 3. Choose the type
+
+| Type                 | Gladys feature    | The value          |
+| -------------------- | ----------------- | ------------------ |
+| **Number (no unit)** | generic sensor    | any number         |
+| **Temperature (°C)** | temperature       | number             |
+| **Humidity (%)**     | humidity          | number             |
+| **Percentage (%)**   | level             | number             |
+| **Power (W)**        | power             | number (signed)    |
+| **Energy (kWh)**     | energy            | number             |
+| **Binary (on/off)**  | input state (1/0) | see below          |
+| **Text**             | text              | 250 characters max |
+
+**Binary (on/off)**: `true`, a number other than 0, `on`, `yes`, `up`,
+`active`, `enabled` (and `oui`, `ja`, `si`) give 1; `false`, 0, `off`, `no`,
+`down`, `inactive`, `disabled` (and `non`, `nein`) give 0. Anything else is an
+error.
+
+### 4. Add the devices
+
+Click **Test the sensors**: every sensor is read now, and the answer says what
+each one gives, or why it gives nothing. Then add the sensors in the
+**Discovery** tab of the integration.
+
+## The devices
+
+One device per sensor, with two features:
+
+- the value, of the type of the slot;
+- **In error**: 1 while the sensor fails, 0 otherwise.
+
+A failed reading is tried again after 30 seconds; the sensor is in error after
+two failed readings in a row, so one lost answer changes nothing. The last
+value stays meanwhile. The badge of the device says local or cloud (from the
+address), unreachable while in error.
+
+Changing the address, the path, the type or a header of a slot keeps the
+device and its history (the identity is the slot number). Changing the type
+adds a new value feature: click **Update** in the Discovery tab.
 
 ## Dashboard
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+The **HTTP values** widget shows one row per sensor: the value with its unit,
+or "Error". In its settings, choose the sensors to show (empty: all; only the
+devices added to Gladys can be chosen). **Refresh** reads them again now.
+
+## Scenes
+
+### Triggers
+
+- **A sensor fails**: two readings in a row fail (no answer, HTTP error, value
+  not found, configuration to fix). Once, until the sensor works again. Filter:
+  a sensor, or any. Variables: the sensor name, the error, its key (`status`,
+  `timeout`, `unreachable`, `tls`, `too_large`, `redirect`, `not_json`,
+  `not_found`, `no_match`, `not_number`, `not_binary`, `empty`, `config`…)
+  and the HTTP code (0 without an answer).
+- **A text value changes**: a sensor of type **Text** reads a value different
+  from the last one (not at the first reading, not after a restart).
+  Variables: the sensor name, the new value and the previous one.
+
+For a number that crosses a threshold, use the device value in a scene
+condition as for any sensor.
+
+### Actions
+
+- **Call an address**: sends a request — address, method (GET, POST, PUT,
+  PATCH, DELETE), headers, body — where scene values can be inserted (type
+  `{{`). The body is not sent with GET. **Secret header of sensor** adds the
+  secret header of a sensor, **only if the address is on the host of that
+  sensor**: a scene cannot send it elsewhere (no secret can be typed in a
+  scene, every user can read them). An optional field path or regular
+  expression reads a value in the answer.
+- **Read a sensor now**: reads a sensor without waiting for its interval, and
+  publishes its value.
+
+Both give the next actions: **Succeeded**, the **HTTP code (0: no answer)**,
+the **Value read**, the **Value as a number (0 if none)** and the **Error**;
+**Call an address** also gives the **Answer (2000 characters at most)**. A
+failed request does not stop the scene: test **Succeeded**.
+
+### Scene ideas
+
+- Every evening at 22:00, **Call an address**
+  `http://192.168.1.30/relay/0?turn=off` to switch off a Shelly relay, then
+  send a message if **Succeeded** is false.
+- **A sensor fails** on the NAS sensor: send "NAS: " and the **Error** variable to your
+  phone.
+- When the alarm is armed, **Call an address** on a webhook (Node-RED, n8n,
+  Home Assistant) with the method POST and the body `{"alarm": "armed"}`.
+- **Read a sensor now** on the pool temperature before starting the pump, then
+  a condition on the value.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **Field not found in the answer**: open the address in a browser, copy the
+  path to the value (Firefox shows JSON as a tree, "Copy path" is in the
+  context menu of a value). Lists are counted from 0.
+- **The answer is not JSON**: the address gives a page or a text: use a
+  regular expression, or check the address (a login page?).
+- **Error answer (HTTP 401 or 403)**: the token or the key is wrong or
+  missing: fill in **Secret header (token)**.
+- **Certificate refused**: untick **Check the certificate (https)** for that
+  slot.
+- **Redirected to another address, refused**: the address sends to another
+  host (often `http://` to a cloud login page). Type the final address.
+- **No answer in time**: the address answers in more than 10 seconds.
+- **The value is not a number**: the path leads to a text or a list; adjust it,
+  or choose the type **Text**.
+- Logs: set the `LOG_LEVEL=debug` variable of the integration to see every
+  reading.
+
+## Limits
+
+- 10 sensors, one value each. For several values of one answer, use several
+  slots with the same address.
+- Answers of 1 MB at most, 10 seconds at most (20 s for a scene call),
+  3 redirects at most, on the same host only.
+- No cookies, no login form, no JavaScript: a page built by JavaScript in the
+  browser shows nothing here. Use its API.
+- No units other than the ones of the types: a number in another unit goes in
+  **Number (no unit)**.
+- Mind the rules of the APIs you read (quotas, terms): the interval is yours to
+  choose. Open-Meteo, for example, asks for fewer than 10 000 calls a day.

@@ -1,0 +1,215 @@
+# Sensores HTTP / JSON
+
+Convierta cualquier dirección que responda por HTTP en un sensor de Gladys:
+una API JSON (router, NAS, inversor solar, enchufe inteligente, API pública),
+una respuesta en texto plano o una página web. Usted indica dónde está el
+valor en la respuesta y su tipo (temperatura, potencia, energía, sí/no,
+texto…): se convierte en un dispositivo, leído al intervalo elegido. Sus
+escenas también pueden llamar a cualquier dirección, con valores de la
+escena, y usar la respuesta en los pasos siguientes.
+
+Es el equivalente en Gladys de las integraciones `rest` y `scrape` de Home
+Assistant. Solo se escribe en las direcciones que usted introduce.
+
+Probado con un servidor web de prueba (JSON, texto, HTML, errores 401 y 500,
+respuestas lentas y demasiado grandes, redirecciones) y la API pública de
+Open-Meteo, en el contenedor protegido de Gladys. Sus comentarios son
+bienvenidos:
+[github.com/guim31/gladys-http-json/issues](https://github.com/guim31/gladys-http-json/issues).
+
+## Requisitos
+
+- Gladys Assistant 5.1.0 o posterior.
+- Una dirección que la máquina de Gladys pueda alcanzar: en su red local (las
+  direcciones privadas están permitidas, son el uso principal) o en Internet.
+- Si la dirección lo pide, su token o clave (vea **Cabecera secreta
+  (token)**).
+
+## Primeros pasos
+
+### 1. Rellenar una ranura
+
+La configuración tiene 10 ranuras, **Sensor 1** a **Sensor 10**. Una ranura
+con una **Dirección (URL)** es un sensor; una dirección vacía deja la ranura
+libre. Cada ranura tiene estos campos:
+
+- **Nombre**: el nombre del dispositivo (vacío: «Sensor HTTP 3»).
+- **Dirección (URL)**: `http://` o `https://`, p. ej.
+  `http://192.168.1.20/api/status`. Sin esquema, se usa `http://`. Un usuario
+  y una contraseña en la dirección se rechazan: use la cabecera secreta.
+- **Método**: GET o POST.
+- **Cabeceras**: un `Nombre: valor` por línea, o varios separados por `|`,
+  p. ej. `Accept: application/json | X-Room: piscina`.
+- **Cabecera secreta (token)**: nunca se vuelve a mostrar, nunca se escribe
+  en los registros. Un token solo se envía como `Authorization: Bearer
+<token>`; `Basic …` o `Token …` se envían tal cual tras `Authorization:`;
+  una cabecera entera como `X-Api-Key: abc123` se envía tal cual.
+- **Cuerpo (POST)**: solo se envía con POST; el JSON se envía como
+  `application/json`, lo demás como texto.
+- **Ruta del campo o /expresión regular/**: dónde está el valor (sección
+  siguiente).
+- **Tipo**: lo que es el valor (más abajo).
+- **Multiplicador** y **Desplazamiento**: para los números, valor ×
+  multiplicador + desplazamiento (p. ej. `0,001` para pasar de Wh a kWh,
+  `0,1` para décimas de grado). Se acepta la coma decimal. Vacíos: 1 y 0.
+- **Intervalo de lectura**: de 30 segundos a 1 hora.
+- **Verificar el certificado (https)**: activado por defecto; desmárquelo
+  para un dispositivo con certificado autofirmado.
+
+En **Opciones**, **Idioma de los nombres y mensajes** fija los nombres de las
+funciones (fijados al añadir el dispositivo), las variables de escena y el
+informe de prueba.
+
+### 2. Indicar dónde está el valor
+
+- **Una respuesta JSON**: una ruta de campo. `data.temp`,
+  `sensors[0].value`, `items[-1].price` (el último), `['clave con.puntos']`,
+  o las formas JSONPath `$.data.temp` y `items[?(@.name=='cocina')].temp`
+  (el primer elemento cuyo `name` vale `cocina`; `==` y `!=`, textos entre
+  comillas, números, `true`, `false`, `null`).
+- **Una respuesta de texto o una página web**: una expresión regular entre
+  barras, p. ej. `/Temperatura: ([0-9.,]+)/`. El primer grupo entre
+  paréntesis es el valor (toda la coincidencia si no hay grupo). Opciones tras
+  la última barra: `i` (mayúsculas), `s`, `m`, `u`. En una página web, las
+  etiquetas se quitan del valor y las entidades habituales (`&nbsp;`,
+  `&deg;`…) se decodifican. Una expresión que tarda más de medio segundo se
+  detiene.
+- **Vacío**: toda la respuesta (un dispositivo que responde `21.5` u `ON`).
+
+Un número dentro de un texto se encuentra solo: `21,5 °C` da 21,5. Los
+separadores de miles no se entienden (`1,234.5`): escriba una expresión
+regular para ellos.
+
+### 3. Elegir el tipo
+
+| Tipo                    | Función de Gladys          | El valor            |
+| ----------------------- | -------------------------- | ------------------- |
+| **Número (sin unidad)** | sensor genérico            | cualquier número    |
+| **Temperatura (°C)**    | temperatura                | número              |
+| **Humedad (%)**         | humedad                    | número              |
+| **Porcentaje (%)**      | nivel                      | número              |
+| **Potencia (W)**        | potencia                   | número (con signo)  |
+| **Energía (kWh)**       | energía                    | número              |
+| **Binario (sí/no)**     | estado de la entrada (1/0) | ver más abajo       |
+| **Texto**               | texto                      | 250 caracteres máx. |
+
+**Binario (sí/no)**: `true`, un número distinto de 0, `on`, `yes`, `up`,
+`active`, `enabled` (y `oui`, `ja`, `si`) dan 1; `false`, 0, `off`, `no`,
+`down`, `inactive`, `disabled` (y `non`, `nein`) dan 0. Todo lo demás es un
+error.
+
+### 4. Añadir los dispositivos
+
+Haga clic en **Probar los sensores**: cada sensor se lee al momento, y la
+respuesta indica lo que da cada uno, o por qué no da nada. Después añada los
+sensores en la pestaña **Descubrir** de la integración.
+
+## Los dispositivos
+
+Un dispositivo por sensor, con dos funciones:
+
+- el valor, del tipo de la ranura;
+- **En error**: 1 mientras el sensor falla, 0 si no.
+
+Una lectura fallida se repite 30 segundos después; el sensor está en error
+tras dos lecturas fallidas seguidas, así que una respuesta perdida no cambia
+nada. El último valor se mantiene mientras tanto. La insignia del dispositivo
+indica local o nube (según la dirección), inaccesible mientras está en error.
+
+Cambiar la dirección, la ruta, el tipo o una cabecera de una ranura conserva
+el dispositivo y su historial (la identidad es el número de la ranura).
+Cambiar el tipo añade una nueva función de valor: haga clic en **Actualizar**
+en la pestaña Descubrir.
+
+## Panel de control
+
+El widget **Valores HTTP** muestra una fila por sensor: el valor con su
+unidad, o «Error». En sus ajustes, elija los sensores que se muestran (vacío:
+todos; solo se pueden elegir los dispositivos añadidos a Gladys).
+**Actualizar** los vuelve a leer al momento.
+
+## Escenas
+
+### Disparadores
+
+- **Un sensor falla**: fallan dos lecturas seguidas (sin respuesta, error
+  HTTP, valor no encontrado, configuración por corregir). Una vez, hasta que
+  el sensor vuelva a funcionar. Filtro: un sensor, o cualquiera. Variables: el
+  nombre del sensor, el error, su clave (`status`, `timeout`, `unreachable`,
+  `tls`, `too_large`, `redirect`, `not_json`, `not_found`, `no_match`,
+  `not_number`, `not_binary`, `empty`, `config`…) y el código HTTP (0 sin
+  respuesta).
+- **Un valor de texto cambia**: un sensor de tipo **Texto** lee un valor
+  distinto del anterior (no en la primera lectura, no tras un reinicio).
+  Variables: el nombre del sensor, el nuevo valor y el anterior.
+
+Para un número que cruza un umbral, use el valor del dispositivo en una
+condición de escena, como para cualquier sensor.
+
+### Acciones
+
+- **Llamar a una dirección**: envía una petición — dirección, método (GET,
+  POST, PUT, PATCH, DELETE), cabeceras, cuerpo — donde se pueden insertar
+  valores de la escena (escriba `{{`). El cuerpo no se envía con GET.
+  **Cabecera secreta del sensor** añade la cabecera secreta de un sensor,
+  **solo si la dirección está en el host de ese sensor**: una escena no puede
+  enviarla a otro sitio (en una escena no se introduce ningún secreto, todos
+  los usuarios pueden leerlas). Una ruta de campo o una expresión regular,
+  opcional, lee un valor en la respuesta.
+- **Leer un sensor ahora**: lee un sensor sin esperar a su intervalo, y
+  publica su valor.
+
+Ambas dan a las acciones siguientes: **Correcto**, el **Código HTTP (0: sin
+respuesta)**, el **Valor leído**, el **Valor como número (0 si ninguno)** y el
+**Error**; **Llamar a una dirección** da también la **Respuesta (2000
+caracteres como máximo)**. Una petición fallida no detiene la escena:
+compruebe **Correcto**.
+
+### Ideas de escenas
+
+- Cada noche a las 22:00, **Llamar a una dirección**
+  `http://192.168.1.30/relay/0?turn=off` para apagar un relé Shelly, y luego
+  enviar un mensaje si **Correcto** es falso.
+- **Un sensor falla** en el sensor del NAS: enviar «NAS: » y la variable
+  **Error** a su teléfono.
+- Cuando se arma la alarma, **Llamar a una dirección** en un webhook
+  (Node-RED, n8n, Home Assistant) con POST y el cuerpo
+  `{"alarma": "armada"}`.
+- **Leer un sensor ahora** la temperatura de la piscina antes de arrancar la
+  bomba, y luego una condición sobre el valor.
+
+## Solución de problemas
+
+- **Campo no encontrado en la respuesta**: abra la dirección en un
+  navegador y copie la ruta hasta el valor (Firefox muestra el JSON en árbol,
+  «Copiar ruta» está en el menú contextual de un valor). Las listas se
+  cuentan desde 0.
+- **La respuesta no es JSON**: la dirección da una página o un texto: use una
+  expresión regular, o compruebe la dirección (¿una página de inicio de
+  sesión?).
+- **Respuesta de error (HTTP 401 o 403)**: el token o la clave es incorrecto
+  o falta: rellene **Cabecera secreta (token)**.
+- **Certificado rechazado**: desmarque **Verificar el certificado (https)**
+  para esa ranura.
+- **Redirigido a otra dirección, rechazado**: la dirección envía a otro host
+  (a menudo `http://` a una página de inicio de sesión en la nube).
+  Introduzca la dirección final.
+- **Sin respuesta a tiempo**: la dirección tarda más de 10 segundos.
+- **El valor no es un número**: la ruta lleva a un texto o a una lista;
+  ajústela, o elija el tipo **Texto**.
+- Registros: ponga la variable `LOG_LEVEL=debug` de la integración para ver
+  cada lectura.
+
+## Limitaciones
+
+- 10 sensores, un valor cada uno. Para varios valores de una misma respuesta,
+  use varias ranuras con la misma dirección.
+- Respuestas de 1 MB como máximo, 10 segundos como máximo (20 s para una
+  llamada desde una escena), 3 redirecciones como máximo, solo en el mismo
+  host.
+- Ni cookies, ni formulario de inicio de sesión, ni JavaScript: una página
+  construida por JavaScript en el navegador no muestra nada aquí. Use su API.
+- No hay más unidades que las de los tipos: un número en otra unidad va en
+  **Número (sin unidad)**.
+- Respete las reglas de las API que lee (cuotas, condiciones): el intervalo lo
+  elige usted. Open-Meteo, por ejemplo, pide menos de 10 000 llamadas al día.
