@@ -7,9 +7,9 @@
 // Bounded on purpose, since the address is anything the user typed:
 //   - a deadline for the whole answer (a slow one that trickles in too);
 //   - 1 MB of answer at most, cut while it arrives;
-//   - redirects followed on the same host only (3 at most): a redirect to
-//     another host is refused and says where it went, so a token never
-//     leaves for an address the user did not type.
+//   - redirects followed on the same host only (3 at most), never from
+//     https to http: a redirect elsewhere is refused and says where it went,
+//     so a token never leaves for an address the user did not type.
 // Private addresses are allowed: they are the main use.
 // -----------------------------------------------------------------------------
 
@@ -175,7 +175,9 @@ export async function httpRequest(
     } catch {
       return { ...answer, url: target.href };
     }
-    if (next.hostname !== host || !['http:', 'https:'].includes(next.protocol)) {
+    // Same host only, and never from https down to http (the headers would travel in clear).
+    const downgrade = target.protocol === 'https:' && next.protocol === 'http:';
+    if (next.hostname !== host || downgrade || !['http:', 'https:'].includes(next.protocol)) {
       throw new HttpError(HTTP_ERRORS.REDIRECT, next.host, answer.status);
     }
     if (hop >= MAX_REDIRECTS) {

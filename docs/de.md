@@ -38,12 +38,12 @@ frei. Jeder Platz hat diese Felder:
   Benutzer und Passwort in der Adresse werden abgelehnt: Nutze den geheimen
   Header.
 - **Methode**: GET oder POST.
-- **Header**: ein `Name: Wert` pro Zeile, oder mehrere mit `|` getrennt,
+- **Header**: ein `Name: Wert` pro Zeile, oder mehrere mit einem `|` mit Leerzeichen davor und danach getrennt,
   z. B. `Accept: application/json | X-Room: pool`.
 - **Geheimer Header (Token)**: nie wieder angezeigt, nie in den Protokollen.
   Ein Token allein wird als `Authorization: Bearer <Token>` gesendet;
   `Basic …` oder `Token …` gehen wie eingegeben nach `Authorization:`; ein
-  ganzer Header wie `X-Api-Key: abc123` geht unverändert.
+  ganzer Header wie `X-Api-Key: abc123` (oder `X-Api-Key:abc123`) geht unverändert.
 - **Inhalt (POST)**: nur bei POST gesendet; JSON geht als
   `application/json`, alles andere als Text.
 - **Feldpfad oder /regulärer Ausdruck/**: wo der Wert steht (nächster
@@ -152,8 +152,7 @@ einer Szenenbedingung wie bei jedem Sensor.
 - **Adresse aufrufen**: sendet eine Anfrage — Adresse, Methode (GET, POST,
   PUT, PATCH, DELETE), Header, Inhalt —, in die Werte der Szene eingefügt
   werden können (tippe `{{`). Bei GET wird kein Inhalt gesendet. **Geheimer
-  Header von Sensor** fügt den geheimen Header eines Sensors hinzu, **nur
-  wenn die Adresse auf dem Host dieses Sensors liegt**: Eine Szene kann ihn
+  Header von Sensor** fügt den geheimen Header eines Sensors hinzu, **nur an die Adresse dieses Sensors (gleiches Schema, Host und Port)**: Eine Szene kann ihn
   nicht anderswohin schicken (in einer Szene lässt sich kein Geheimnis
   eingeben, jeder Benutzer kann sie lesen). Ein optionaler Feldpfad oder
   regulärer Ausdruck liest einen Wert aus der Antwort.
@@ -191,8 +190,7 @@ den **Fehler**; **Adresse aufrufen** gibt außerdem die **Antwort (höchstens
   fehlt: Fülle **Geheimer Header (Token)** aus.
 - **Zertifikat abgelehnt**: Deaktiviere **Zertifikat prüfen (https)** für
   diesen Platz.
-- **An eine andere Adresse umgeleitet, abgelehnt**: Die Adresse leitet auf
-  einen anderen Host um (oft `http://` auf eine Cloud-Anmeldeseite). Gib die
+- **An eine andere Adresse umgeleitet, abgelehnt**: Die Adresse leitet auf einen anderen Host oder von https zu http um (oft `http://` auf eine Cloud-Anmeldeseite). Gib die
   endgültige Adresse ein.
 - **Keine rechtzeitige Antwort**: Die Adresse braucht mehr als 10 Sekunden.
 - **Der Wert ist keine Zahl**: Der Pfad führt zu einem Text oder einer Liste;
@@ -205,7 +203,7 @@ den **Fehler**; **Adresse aufrufen** gibt außerdem die **Antwort (höchstens
 - 10 Sensoren, je ein Wert. Für mehrere Werte einer Antwort nutze mehrere
   Plätze mit derselben Adresse.
 - Antworten von höchstens 1 MB und 10 Sekunden (20 s bei einem Aufruf aus
-  einer Szene), höchstens 3 Umleitungen, nur auf demselben Host.
+  einer Szene), höchstens 3 Umleitungen, nur auf demselben Host und nie von https zu http.
 - Keine Cookies, kein Anmeldeformular, kein JavaScript: Eine Seite, die erst
   im Browser per JavaScript entsteht, zeigt hier nichts. Nutze ihre API.
 - Keine anderen Einheiten als die der Typen: Eine Zahl in einer anderen

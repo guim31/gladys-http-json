@@ -2725,10 +2725,10 @@
             "es": "Cabecera secreta del sensor"
           },
           "description": {
-            "en": "Sent only if the address is on the host of that sensor.",
-            "fr": "Envoyé seulement si l'adresse est sur l'hôte de ce capteur.",
-            "de": "Nur gesendet, wenn die Adresse auf dem Host dieses Sensors liegt.",
-            "es": "Solo se envía si la dirección está en el host de ese sensor."
+            "en": "Sent only to the address of that sensor (same scheme, host, port).",
+            "fr": "Envoyé seulement vers l'adresse de ce capteur (même schéma, hôte, port).",
+            "de": "Nur an die Adresse dieses Sensors (gleiches Schema, Host, Port).",
+            "es": "Solo se envía a la dirección de ese sensor (mismo esquema, host, puerto)."
           },
           "default": "none",
           "options": [

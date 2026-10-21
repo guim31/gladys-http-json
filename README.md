@@ -27,7 +27,7 @@ counterpart of the `rest` and `scrape` integrations of Home Assistant.
   values; the code, the answer and a value read in it go to the next steps)
   and "Read a sensor now".
 - **Bounded**: answers of 1 MB and 10 seconds at most, redirects followed on
-  the same host only, regular expressions stopped after half a second.
+  the same host only (never from https to http), regular expressions stopped after half a second.
 - English, French, German and Spanish.
 
 ## Requirements

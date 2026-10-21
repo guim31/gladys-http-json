@@ -6,7 +6,7 @@
 // address, headers and body (Gladys replaces them before the action
 // arrives), and hand the answer to the next actions. No secret field is
 // possible in a scene (its JSON is readable by every user): the secret header
-// of a configured sensor can be reused instead, towards the host of that
+// of a configured sensor can be reused instead, towards the origin of that
 // sensor only (a scene must not be a way to send it elsewhere).
 //
 // "Read a sensor now": a fresh value before a decision (the sensor reads at
@@ -20,11 +20,13 @@
 import { createLogger } from '@gladysassistant/integration-sdk';
 import { MAX_SENSORS, parseExtraction, parseHeaders, parseUrl } from './config.js';
 import { HttpHub, fetchValue } from './hub.js';
+import { FailureLog } from './logs.js';
 import { METHODS, hostOf } from './http.js';
 import { toNumber, toText } from './sensors.js';
-import { ACTION_TEXT, pick } from './texts.js';
+import { ACTION_TEXT, errorText, pick } from './texts.js';
 
 const logger = createLogger({ name: 'http-json-scenes' });
+const failures = new FailureLog(logger);
 
 // The deadline of a call: within the action's 30 s, the relay included.
 export const CALL_TIMEOUT_MS = 20_000;
@@ -70,7 +72,10 @@ export const SCENE_ACTIONS = {
     const source = String(fields.secret_from ?? 'none');
     const slot = SECRET_SOURCES.includes(source) && source !== 'none' ? Number(source) : 0;
     const secret = slot ? hub.secretOf(slot, url) : {};
-    if (!secret) {
+    if (secret === undefined) {
+      fail(ACTION_TEXT.noSecret, language);
+    }
+    if (secret === null) {
       fail(ACTION_TEXT.secretHost, language);
     }
     const call = {
@@ -86,11 +91,15 @@ export const SCENE_ACTIONS = {
       convertValue: false,
       timeoutMs: CALL_TIMEOUT_MS,
     });
-    const line = `Call: ${method} ${hostOf(url)} → ${outcome.status ? `HTTP ${outcome.status}` : outcome.error.kind}`;
+    // Quiet logs: a call is debug; a failing host is logged once, then once when it answers again.
+    const host = hostOf(url);
+    logger.debug(
+      `Call: ${method} ${host} → ${outcome.status ? `HTTP ${outcome.status}` : outcome.error.kind}`,
+    );
     if (outcome.error) {
-      logger.warn(line);
+      failures.fail(host, `Call to ${host}: ${errorText(outcome.error, 'en')}`);
     } else {
-      logger.info(line);
+      failures.recover(host, `Call to ${host} works again`);
     }
     return {
       ...outputsOf(hub, outcome, outcome.error ? null : outcome.raw),

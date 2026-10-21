@@ -325,3 +325,76 @@ test('the timer of the container reads the added sensors, without any onPoll', a
   }
   assert.equal(w.fake.lastState(ids(w, 2).feature('value_power')), 42);
 });
+
+test('/data never holds a secret nor an address', async (t) => {
+  const store = new MemoryStore();
+  const url = 'https://api.example.org/v1/x?apikey=KEY-IN-URL';
+  const config = { ...slot(1, { url, secret: 'TOKEN-123', path: 'v', type: 'text' }) };
+  const w = await createWorld({ config, routes: { [url]: json({ v: 'a' }) }, store });
+  t.after(() => w.app.stop());
+  w.web.routes[url] = json({}, 500);
+  for (let i = 0; i < 2; i += 1) {
+    w.tick(60_000);
+    await w.hub.readDue();
+  }
+  const saved = JSON.stringify(store.data);
+  assert.ok(saved.includes('"failing"') && saved.includes('"texts"'), saved);
+  assert.doesNotMatch(saved, /TOKEN|KEY-IN-URL|example\.org/);
+});
+
+test('a restart during a failure: "In error" stays 1, the badge stays unreachable', async (t) => {
+  const store = new MemoryStore();
+  const failing = { ...ROUTES, [PLUG]: json({}, 500) };
+  const w = await world({ store, routes: failing });
+  w.tick(30_000);
+  await w.hub.readDue();
+  await w.app.stop();
+  const again = await world({ store, routes: failing, devices: w.fake.devices });
+  t.after(() => again.app.stop());
+  await again.add(ids(again, 2).device);
+  const errors = again.fake.states
+    .filter((s) => s.device_feature_external_id === ids(again, 2).feature('error'))
+    .map((s) => s.state);
+  assert.deepEqual([...new Set(errors)], [1]);
+  const badges = again.fake.transports
+    .filter((e) => e.device_external_id === ids(again, 2).device)
+    .map((e) => e.transport);
+  assert.deepEqual([...new Set(badges)], ['unreachable']);
+  again.web.routes[PLUG] = ROUTES[PLUG];
+  again.tick(30_000);
+  await again.hub.readDue();
+  assert.equal(again.fake.lastState(ids(again, 2).feature('error')), 0);
+  assert.equal(again.fake.lastState(ids(again, 2).feature('value_power')), 151.3);
+});
+
+test('while failing, the last value is not sent again as a fresh one', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  await w.add(ids(w, 2).device);
+  w.web.routes[PLUG] = json({}, 500);
+  for (let i = 0; i < 2; i += 1) {
+    w.tick(30_000);
+    await w.hub.readDue();
+  }
+  const count = () =>
+    w.fake.states.filter((s) => s.device_feature_external_id === ids(w, 2).feature('value_power'))
+      .length;
+  const before = count();
+  w.tick(7 * 3600_000);
+  await w.hub.readDue();
+  assert.equal(count(), before, 'no heartbeat for a stale value');
+});
+
+test('"Read a sensor now" does not wait for a cycle of slow sensors', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  let release;
+  w.web.routes[METEO] = () => new Promise((resolve) => (release = resolve));
+  w.tick(60_000);
+  const cycle = w.hub.readDue();
+  await new Promise((resolve) => setImmediate(resolve));
+  const ack = await w.fake.sceneAction('read_sensor', { sensor: ids(w, 2).device });
+  assert.equal(ack.data.outputs.number, 151.3, 'answered while the cycle is still waiting');
+  release(json(fixture('open-meteo-current.json')));
+  await cycle;
+});

@@ -189,10 +189,16 @@ export const ACTION_TEXT = {
   badPath: SLOT_ERROR_TEXT[SLOT_ERRORS.PATH],
   badHeaders: SLOT_ERROR_TEXT[SLOT_ERRORS.HEADERS],
   secretHost: {
-    en: 'The secret header of a sensor is only sent to the host of that sensor.',
-    fr: "L'en-tête secret d'un capteur n'est envoyé qu'à l'hôte de ce capteur.",
-    de: 'Der geheime Header eines Sensors geht nur an den Host dieses Sensors.',
-    es: 'La cabecera secreta de un sensor solo se envía al host de ese sensor.',
+    en: 'The secret header of a sensor is only sent to its address (same scheme, host and port).',
+    fr: "L'en-tête secret d'un capteur ne part que vers son adresse (même schéma, hôte et port).",
+    de: 'Der geheime Header eines Sensors geht nur an seine Adresse (gleiches Schema, Host, Port).',
+    es: 'La cabecera secreta de un sensor solo va a su dirección (mismo esquema, host y puerto).',
+  },
+  noSecret: {
+    en: 'This sensor has no secret header: fill it in the configuration.',
+    fr: "Ce capteur n'a pas d'en-tête secret : remplissez-le dans la configuration.",
+    de: 'Dieser Sensor hat keinen geheimen Header: Fülle ihn in der Konfiguration aus.',
+    es: 'Este sensor no tiene cabecera secreta: rellénela en la configuración.',
   },
   unknownSensor: {
     en: 'Unknown sensor: choose a device of this integration.',

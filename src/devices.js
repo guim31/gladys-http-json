@@ -84,7 +84,9 @@ export function sensorStates(gladys, sensor, reading) {
   }
   const ids = sensorIds(gladys, sensor.slot);
   const states = [{ externalId: ids.feature(ERROR_FEATURE), value: reading.failing ? 1 : 0 }];
-  if (reading.value !== null && reading.value !== undefined) {
+  // While failing, the last value is not sent again (the heartbeat would
+  // make an old value look recent).
+  if (!reading.failing && reading.value !== null && reading.value !== undefined) {
     states.push({
       externalId: ids.feature(valueFeatureKey(sensor.type)),
       value: reading.value,

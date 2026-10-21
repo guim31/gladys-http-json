@@ -263,7 +263,7 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   (adresse, méthode, en-têtes, corps, chemin, type, échelle) : une nouvelle signature oublie l'annonce et
   le dernier texte. `text_changed` jamais à la première lecture ni au redémarrage.
 - **HTTP** (`src/http.js`) : délai pour toute la réponse (une réponse qui goutte aussi), 1 Mo coupé à la
-  réception, redirections suivies **sur le même hôte seulement** (3 au plus ; 303, et 301/302 après un
+  réception, redirections suivies **sur le même hôte seulement**, jamais de https vers http (3 au plus ; 303, et 301/302 après un
   POST, repassent en GET) ; une redirection vers un autre hôte est une erreur `redirect` qui nomme l'hôte.
   Les journaux ne montrent que l'hôte (`hostOf`), jamais le chemin ni la requête (clés d'API).
 - **Expressions régulières** de l'utilisateur exécutées dans `node:vm` avec `timeout` (500 ms) :
@@ -272,5 +272,31 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - **Badge** : `local` pour une IP privée (RFC 1918, CGNAT, lien local, plages de documentation RFC 5737),
   un nom `.local`/`.lan`/`.home`/… ou un nom sans point ; `cloud` sinon.
 - **« Appeler une adresse »** n'a pas de champ secret (refusé dans les scènes, lisibles par tous) :
-  `secret_from` reprend l'en-tête secret d'un capteur, **vers l'hôte de ce capteur seulement**. Une requête
+  `secret_from` reprend l'en-tête secret d'un capteur, **vers l'origine de ce capteur seulement** (schéma, hôte et port : ni en clair, ni vers un autre service du même hôte) ; un capteur sans en-tête secret fait échouer l'action. Une requête
   ratée ne lève pas d'erreur (sorties `success`, `status`, `error`) ; seul un champ inutilisable échoue.
+
+## Vérifié dans le bac à sable (21/10/2026)
+
+Image Docker de l'intégration avec les contraintes du bac à sable (`--cap-drop ALL --security-opt
+no-new-privileges --read-only --memory 256m --pids-limit 256`, volume `/data`, réseau en pont
+`gladys-test-http-json`, aucun port publié), contre un serveur de test Node en conteneur (JSON, texte, HTML,
+401 sans jeton, 500, réponse de 15 s, réponse de 3 Mo, redirection vers un autre hôte, 301 sur le même hôte,
+écho d'un POST) et l'API publique Open-Meteo.
+
+- Sans Gladys : reconnexion du SDK en backoff, pas de plantage, aucun secret dans les logs, ~18 Mo au repos.
+- Faux Gladys du SDK dans le conteneur verrouillé, 10 emplacements : filtre JSONPath, index `[-1]`, texte par
+  expression régulière, page HTML (`1&nbsp;234,5 m&sup3;` : a révélé le séparateur de milliers par espace,
+  corrigé), jeton secret (`Bearer`), 401 et 500 (`request_failed` avec le code), délai de 10 s, réponse coupée
+  à 1 Mo, Open-Meteo en HTTPS ; « Appeler une adresse » en POST JSON, 301 suivi, redirection vers un autre
+  hôte refusée et nommée, secret réutilisé vers son hôte puis refusé vers un autre ; « Relire un capteur
+  maintenant », widget. ~80 Mo au pic (réponse de 3 Mo coupée).
+
+## Relecture indépendante (21/10/2026)
+
+Corrigé : la **signature** d'un emplacement (adresse, en-têtes, secret compris) partait en clair dans `/data` :
+elle est hachée (SHA-256) ; au redémarrage pendant une panne annoncée, « En erreur » passait 1 → 0 → 1 (et le
+badge) et relançait les scènes : la lecture est réamorcée en panne ; « Relire un capteur maintenant » et
+« Actualiser » attendaient la fin d'un cycle de capteurs lents (au-delà des 30 s) : lecture directe hors file
+(`readSlots`) ; secret de scène lié à l'**origine** et redirection https → http refusée ; valeurs d'en-tête
+hors Latin-1 ou caractères de contrôle refusées à la configuration (`node:http` lève sinon) ; plus de
+battement de cœur d'une valeur périmée pendant une panne ; appels de scène en debug, échecs une fois par hôte.

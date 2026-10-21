@@ -34,8 +34,6 @@ export const TRIGGERS = Object.freeze({
 export const HUB_TIMINGS = {
   // A failed reading is tried again this soon (or at the interval, if shorter).
   retryMs: 30_000,
-  // A scene action or the widget reads again when the last read is older.
-  freshMs: 15_000,
   // An unchanged value is sent again this often: Gladys marks a value older
   // than 48 h as outdated.
   heartbeatMs: 6 * 3600_000,
@@ -167,6 +165,21 @@ export class HttpHub {
     const object = (value) =>
       value && typeof value === 'object' && !Array.isArray(value) ? value : {};
     this.events = { failing: object(events.failing), texts: object(events.texts) };
+    // A failure announced before the restart still stands until a reading
+    // works: no "In error" 1 → 0 → 1 (nor badge flip) that would start the
+    // scenes again.
+    for (const sensor of config.sensors) {
+      if (this.events.failing[sensor.slot] === sensor.signature) {
+        this.readings.set(sensor.slot, {
+          value: null,
+          error: { kind: HTTP_ERRORS.UNREACHABLE, detail: '', status: 0 },
+          failures: FAILED_AFTER,
+          failing: true,
+          status: 0,
+          readAt: 0,
+        });
+      }
+    }
     await this.reconfigure(config);
     logger.info(`${this.sensors.size} sensor(s) configured`);
   }
@@ -262,13 +275,7 @@ export class HttpHub {
       for (let at = 0; at < due.length; at += CONCURRENCY) {
         await Promise.all(due.slice(at, at + CONCURRENCY).map((sensor) => this.readSensor(sensor)));
       }
-      await this.publishStates();
-      await this.publishDevices({ force: publish });
-      await this.publishTransports();
-      await this.publishConnectionStatus();
-      if (before !== this.widgetSignature()) {
-        this.gladys.requestWidgetRefresh(WIDGET_KEY);
-      }
+      await this.publishAll(before, { publish });
     };
     // One cycle at a time: a cycle asked during another one runs after it.
     const cycle = (this.cycle ?? Promise.resolve()).catch(() => {}).then(run);
@@ -281,6 +288,30 @@ export class HttpHub {
       }
       this.schedule();
     }
+  }
+
+  /** Send to Gladys what the readings changed. */
+  async publishAll(widgetBefore, { publish = false } = {}) {
+    await this.publishStates();
+    await this.publishDevices({ force: publish });
+    await this.publishTransports();
+    await this.publishConnectionStatus();
+    if (widgetBefore !== this.widgetSignature()) {
+      this.gladys.requestWidgetRefresh(WIDGET_KEY);
+    }
+  }
+
+  /**
+   * Read some sensors now, outside the queue of the timer cycles: a scene
+   * action or the widget button must not wait for a cycle of slow sensors
+   * (their deadline is 30 s). A sensor already being read shares its request.
+   */
+  async readSlots(slots) {
+    const before = this.widgetSignature();
+    const sensors = slots.map((slot) => this.sensors.get(slot)).filter(Boolean);
+    await Promise.all(sensors.map((sensor) => this.readSensor(sensor)));
+    await this.publishAll(before);
+    this.schedule();
   }
 
   /** Read one sensor now (concurrent calls share the request) and apply the outcome. */
@@ -345,17 +376,6 @@ export class HttpHub {
     return JSON.stringify(
       [...this.readings].map(([slot, reading]) => [slot, reading.value, reading.failing]),
     );
-  }
-
-  /** Read every sensor again when the last reading is older than `freshMs` (widget). */
-  async refreshIfStale() {
-    const now = this.now();
-    const stale = [...this.sensors.keys()].filter(
-      (slot) => now - (this.readings.get(slot)?.readAt ?? 0) >= this.timings.freshMs,
-    );
-    if (stale.length > 0) {
-      await this.readDue({ slots: stale });
-    }
   }
 
   // --- Scene events ----------------------------------------------------------
@@ -605,7 +625,7 @@ export class HttpHub {
 
   /** A sensor read now for a scene action: the reading, published like the others. */
   async readNow(sensor) {
-    await this.readDue({ slots: [sensor.slot] });
+    await this.readSlots([sensor.slot]);
     return this.readings.get(sensor.slot) ?? null;
   }
 
@@ -616,14 +636,15 @@ export class HttpHub {
 
   /**
    * The secret header of a sensor, for a call to `url`: only towards the
-   * host of that sensor (null otherwise); none when the slot has none.
+   * origin of that sensor (null otherwise); undefined when the slot has none.
    */
   secretOf(slot, url) {
     const sensor = this.sensors.get(slot);
     if (!sensor?.url || Object.keys(sensor.secretHeaders ?? {}).length === 0) {
-      return {};
+      return undefined;
     }
-    return new URL(sensor.url).hostname === new URL(url).hostname ? sensor.secretHeaders : null;
+    // The origin (scheme, host and port): never in clear over http, never to another service.
+    return new URL(sensor.url).origin === new URL(url).origin ? sensor.secretHeaders : null;
   }
 
   /** The error of a reading, in the configured language. */

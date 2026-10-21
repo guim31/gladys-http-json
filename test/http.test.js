@@ -4,7 +4,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import https from 'node:https';
 import { HttpError, hostOf, httpRequest, isLocalAddress } from '../src/http.js';
+import { fixture } from './helpers/world.js';
 
 async function serve(t, handler) {
   const server = http.createServer(handler);
@@ -81,6 +83,8 @@ test('redirects: followed on the same host, refused to another one', async (t) =
       res.writeHead(303, { Location: '/new' });
     } else if (req.url === '/away') {
       res.writeHead(302, { Location: 'http://198.51.100.7/steal' });
+    } else if (req.url === '/down') {
+      res.writeHead(302, { Location: `http://127.0.0.1:${req.socket.localPort}/new` });
     } else if (req.url === '/loop') {
       res.writeHead(302, { Location: '/loop' });
     } else {
@@ -97,6 +101,36 @@ test('redirects: followed on the same host, refused to another one', async (t) =
   const away = httpRequest(`${base}/away`, { headers: { Authorization: 'k' } });
   await assert.rejects(away, (err) => err.kind === 'redirect' && err.detail === '198.51.100.7');
   assert.equal(await kindOf(httpRequest(`${base}/loop`)), 'redirect');
+  assert.equal(
+    await kindOf(httpRequest(`${base}/down`)),
+    null,
+    'http to http on the same host is followed',
+  );
+});
+
+test('https: the certificate is checked, and never followed down to http', async (t) => {
+  // A self-signed certificate made for these tests only (CN=127.0.0.1).
+  const server = https.createServer(
+    { key: fixture('test-key.pem'), cert: fixture('test-cert.pem') },
+    (req, res) => {
+      if (req.url === '/down') {
+        res.writeHead(302, { Location: `http://127.0.0.1:${server.address().port}/x` });
+      } else {
+        res.writeHead(200);
+        res.write('secure');
+      }
+      res.end();
+    },
+  );
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const base = `https://127.0.0.1:${server.address().port}`;
+  assert.equal(await kindOf(httpRequest(base)), 'tls', 'self-signed refused by default');
+  assert.equal((await httpRequest(base, { verifyTls: false })).body, 'secure');
+  await assert.rejects(
+    httpRequest(`${base}/down`, { verifyTls: false, headers: { Authorization: 'k' } }),
+    (err) => err.kind === 'redirect',
+  );
 });
 
 test('what is shown of an address: the host only', () => {

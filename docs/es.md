@@ -38,12 +38,12 @@ libre. Cada ranura tiene estos campos:
   `http://192.168.1.20/api/status`. Sin esquema, se usa `http://`. Un usuario
   y una contraseña en la dirección se rechazan: use la cabecera secreta.
 - **Método**: GET o POST.
-- **Cabeceras**: un `Nombre: valor` por línea, o varios separados por `|`,
+- **Cabeceras**: un `Nombre: valor` por línea, o varios separados por un `|` con un espacio a cada lado,
   p. ej. `Accept: application/json | X-Room: piscina`.
 - **Cabecera secreta (token)**: nunca se vuelve a mostrar, nunca se escribe
   en los registros. Un token solo se envía como `Authorization: Bearer
 <token>`; `Basic …` o `Token …` se envían tal cual tras `Authorization:`;
-  una cabecera entera como `X-Api-Key: abc123` se envía tal cual.
+  una cabecera entera como `X-Api-Key: abc123` (o `X-Api-Key:abc123`) se envía tal cual.
 - **Cuerpo (POST)**: solo se envía con POST; el JSON se envía como
   `application/json`, lo demás como texto.
 - **Ruta del campo o /expresión regular/**: dónde está el valor (sección
@@ -152,7 +152,7 @@ condición de escena, como para cualquier sensor.
   POST, PUT, PATCH, DELETE), cabeceras, cuerpo — donde se pueden insertar
   valores de la escena (escriba `{{`). El cuerpo no se envía con GET.
   **Cabecera secreta del sensor** añade la cabecera secreta de un sensor,
-  **solo si la dirección está en el host de ese sensor**: una escena no puede
+  **solo hacia la dirección de ese sensor (mismo esquema, host y puerto)**: una escena no puede
   enviarla a otro sitio (en una escena no se introduce ningún secreto, todos
   los usuarios pueden leerlas). Una ruta de campo o una expresión regular,
   opcional, lee un valor en la respuesta.
@@ -191,7 +191,7 @@ compruebe **Correcto**.
   o falta: rellene **Cabecera secreta (token)**.
 - **Certificado rechazado**: desmarque **Verificar el certificado (https)**
   para esa ranura.
-- **Redirigido a otra dirección, rechazado**: la dirección envía a otro host
+- **Redirigido a otra dirección, rechazado**: la dirección envía a otro host, o de https a http
   (a menudo `http://` a una página de inicio de sesión en la nube).
   Introduzca la dirección final.
 - **Sin respuesta a tiempo**: la dirección tarda más de 10 segundos.
@@ -205,8 +205,7 @@ compruebe **Correcto**.
 - 10 sensores, un valor cada uno. Para varios valores de una misma respuesta,
   use varias ranuras con la misma dirección.
 - Respuestas de 1 MB como máximo, 10 segundos como máximo (20 s para una
-  llamada desde una escena), 3 redirecciones como máximo, solo en el mismo
-  host.
+  llamada desde una escena), 3 redirecciones como máximo, solo en el mismo host y nunca de https a http.
 - Ni cookies, ni formulario de inicio de sesión, ni JavaScript: una página
   construida por JavaScript en el navegador no muestra nada aquí. Use su API.
 - No hay más unidades que las de los tipos: un número en otra unidad va en

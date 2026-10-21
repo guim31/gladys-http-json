@@ -27,8 +27,7 @@ the notes of the version's GitHub Release.
 - Scene triggers "A sensor fails" (HTTP code, error) and "A text value
   changes" (new and previous value).
 - Scene actions "Call an address" (method, headers, body with scene values,
-  the secret header of a sensor towards its host only; the code, the answer
+  the secret header of a sensor towards its own address only; the code, the answer
   and the value read as outputs) and "Read a sensor now".
-- Answers capped at 1 MB and 10 seconds, redirects followed on the same host
-  only.
+- Answers capped at 1 MB and 10 seconds, redirects followed on the same host only, never from https to http.
 - English, French, German and Spanish everywhere, documentation included.

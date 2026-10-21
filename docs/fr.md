@@ -38,12 +38,12 @@ laisse l'emplacement libre. Chaque emplacement a ces champs :
   utilisateur et un mot de passe dans l'adresse sont refusés : utilisez
   l'en-tête secret.
 - **Méthode** : GET ou POST.
-- **En-têtes** : un `Nom: valeur` par ligne, ou plusieurs séparés par `|`,
+- **En-têtes** : un `Nom: valeur` par ligne, ou plusieurs séparés par un `|` entouré d'espaces,
   ex. `Accept: application/json | X-Room: piscine`.
 - **En-tête secret (jeton)** : jamais réaffiché, jamais écrit dans les logs.
   Un jeton seul part en `Authorization: Bearer <jeton>` ; `Basic …` ou
   `Token …` partent tels quels après `Authorization:` ; un en-tête entier
-  comme `X-Api-Key: abc123` part tel quel.
+  comme `X-Api-Key: abc123` (ou `X-Api-Key:abc123`) part tel quel.
 - **Corps (POST)** : envoyé en POST seulement ; du JSON part en
   `application/json`, le reste en texte.
 - **Chemin du champ ou /expression régulière/** : où se trouve la valeur
@@ -154,8 +154,7 @@ une condition de scène, comme pour tout capteur.
 - **Appeler une adresse** : envoie une requête — adresse, méthode (GET, POST,
   PUT, PATCH, DELETE), en-têtes, corps — où des valeurs de la scène peuvent
   être insérées (tapez `{{`). Le corps n'est pas envoyé en GET. **En-tête
-  secret du capteur** ajoute l'en-tête secret d'un capteur, **seulement si
-  l'adresse est sur l'hôte de ce capteur** : une scène ne peut pas l'envoyer
+  secret du capteur** ajoute l'en-tête secret d'un capteur, **seulement vers l'adresse de ce capteur (même schéma, hôte et port)** : une scène ne peut pas l'envoyer
   ailleurs (aucun secret ne se saisit dans une scène, tout utilisateur peut
   les lire). Un chemin de champ ou une expression régulière, facultatif, lit
   une valeur dans la réponse.
@@ -193,8 +192,7 @@ caractères au plus)**. Une requête ratée n'arrête pas la scène : testez
   absent : remplissez **En-tête secret (jeton)**.
 - **Certificat refusé** : décochez **Vérifier le certificat (https)** pour cet
   emplacement.
-- **Redirigé vers une autre adresse, refusé** : l'adresse renvoie vers un
-  autre hôte (souvent `http://` vers une page de connexion dans le cloud).
+- **Redirigé vers une autre adresse, refusé** : l'adresse renvoie vers un autre hôte, ou de https vers http (souvent `http://` vers une page de connexion dans le cloud).
   Saisissez l'adresse finale.
 - **Pas de réponse à temps** : l'adresse met plus de 10 secondes à répondre.
 - **La valeur n'est pas un nombre** : le chemin mène à un texte ou à une
@@ -207,7 +205,7 @@ caractères au plus)**. Une requête ratée n'arrête pas la scène : testez
 - 10 capteurs, une valeur chacun. Pour plusieurs valeurs d'une même réponse,
   utilisez plusieurs emplacements avec la même adresse.
 - Réponses de 1 Mo au plus, 10 secondes au plus (20 s pour un appel de
-  scène), 3 redirections au plus, sur le même hôte seulement.
+  scène), 3 redirections au plus, sur le même hôte seulement et jamais de https vers http.
 - Ni cookies, ni formulaire de connexion, ni JavaScript : une page construite
   par JavaScript dans le navigateur ne montre rien ici. Utilisez son API.
 - Pas d'autres unités que celles des types : un nombre dans une autre unité va

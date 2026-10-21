@@ -75,6 +75,7 @@ test('wrong fields mark the sensor, they do not drop it', () => {
   assert.equal(error({ path: 'a..b' }), 'path');
   assert.equal(error({ path: '/(/' }), 'path');
   assert.equal(error({ headers: 'no colon' }), 'headers');
+  assert.equal(error({ secret: 'tok€n' }), 'secret');
   assert.equal(error({ scale: 'ten' }), 'number');
   assert.equal(error({ scale: 'ten', type: 'text' }), null, 'no scale on a text');
   assert.equal(error({ type: 'unknown' }), null, 'an unknown type falls back to number');
@@ -86,6 +87,8 @@ test('headers: lines or " | ", forbidden names refused', () => {
   assert.deepEqual(parseHeaders(''), {});
   assert.equal(parseHeaders('Host: other'), null);
   assert.equal(parseHeaders('Bad Name: 1'), null);
+  assert.equal(parseHeaders('X-Price: 5 €'), null, 'beyond Latin-1');
+  assert.equal(parseHeaders('X-A: a\u0001'), null, 'control character');
 });
 
 test('the secret header: a bare token, a scheme, a whole header', () => {
@@ -95,6 +98,9 @@ test('the secret header: a bare token, a scheme, a whole header', () => {
   assert.deepEqual(secretHeader('X-Api-Key: abc'), { 'X-Api-Key': 'abc' });
   assert.deepEqual(secretHeader('Authorization: Bearer x'), { Authorization: 'Bearer x' });
   assert.deepEqual(secretHeader('user:pass'), { Authorization: 'Bearer user:pass' });
+  assert.deepEqual(secretHeader('X-Api-Key:abc'), { 'X-Api-Key': 'abc' });
+  assert.equal(secretHeader('tok\u0000en'), null, 'node:http would throw');
+  assert.equal(secretHeader('jeton€'), null);
   assert.deepEqual(secretHeader(undefined), {});
 });
 

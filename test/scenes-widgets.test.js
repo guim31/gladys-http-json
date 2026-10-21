@@ -61,7 +61,7 @@ test('"Call an address": a failed request is an outcome, a wrong field an error'
   assert.equal(w.web.calls.at(-1).body, '', 'no body with GET');
 });
 
-test('"Call an address": the secret of a sensor, to the host of that sensor only', async (t) => {
+test('"Call an address": the secret of a sensor, to the origin of that sensor only', async (t) => {
   const w = await createWorld({ config: CONFIG, routes: ROUTES });
   t.after(() => w.app.stop());
   const same = 'http://192.0.2.40/api/boost';
@@ -70,12 +70,15 @@ test('"Call an address": the secret of a sensor, to the host of that sensor only
   assert.equal(ack.data.outputs.success, true);
   assert.equal(w.web.calls.at(-1).headers.Authorization, 'Bearer TKN');
   const calls = w.web.calls.length;
-  const elsewhere = await w.fake.sceneAction('call_url', { url: RELAY, secret_from: '1' });
-  assert.equal(elsewhere.success, false);
-  assert.match(elsewhere.error, /only sent to the host/);
+  for (const url of [RELAY, 'https://192.0.2.40/api/boost', 'http://192.0.2.40:8080/api']) {
+    const elsewhere = await w.fake.sceneAction('call_url', { url, secret_from: '1' });
+    assert.equal(elsewhere.success, false, url);
+    assert.match(elsewhere.error, /only sent to its address/);
+  }
   assert.equal(w.web.calls.length, calls, 'nothing sent');
   const none = await w.fake.sceneAction('call_url', { url: same, secret_from: '2' });
-  assert.equal(none.success, true, 'a sensor without secret: nothing added');
+  assert.equal(none.success, false, 'a sensor without secret: said, not sent without it');
+  assert.match(none.error, /no secret header/);
 });
 
 test('"Read a sensor now": a fresh value, published, or the reason', async (t) => {

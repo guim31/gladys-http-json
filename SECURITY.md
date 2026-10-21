@@ -36,7 +36,7 @@ What the integration handles:
   of the Gladys configuration. The integration reads it from Gladys, keeps it
   in memory, sends it only in the requests of that sensor, and never writes it
   to `/data` nor to the logs. The scene action "Call an address" can reuse it
-  only towards the host of that sensor (a scene is readable by every user, and
+  only towards the address of that sensor (same scheme, host and port) (a scene is readable by every user, and
   must not be a way to send the secret elsewhere). An address with credentials
   inside (`http://user:pass@…`) is refused.
 - **Logs**: only the host of an address is logged, never its path nor its
@@ -45,8 +45,7 @@ What the integration handles:
   to the scenes and the last text read by each text sensor. No secret.
 - **Network**: requests go only to the addresses typed by the user, private
   addresses included (they are the main use). Each answer is capped at 1 MB and
-  10 seconds (20 seconds for a scene call); redirects are followed on the same
-  host only (3 at most), a redirect to another host is refused and reported.
+  10 seconds (20 seconds for a scene call); redirects are followed on the same host only, never from https to http (3 at most), a redirect to another host is refused and reported.
   HTTPS certificates are verified unless the user unticks "Check the
   certificate". A regular expression typed by the user runs with a deadline of
   half a second. The integration opens no port.

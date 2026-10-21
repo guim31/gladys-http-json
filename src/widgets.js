@@ -141,7 +141,7 @@ async function action(hub, { actionKey, settings }) {
     throw new Error(`Unknown action ${actionKey}`);
   }
   const slots = chosenSensors(hub, settings).map((sensor) => sensor.slot);
-  await hub.readDue({ slots });
+  await hub.readSlots(slots);
   return { message: TEXT.refreshed };
 }
 

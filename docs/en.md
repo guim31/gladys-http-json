@@ -35,12 +35,12 @@ slot has these fields:
   `http://192.168.1.20/api/status`. Without a scheme, `http://` is used. A
   user and password in the address are refused: use the secret header.
 - **Method**: GET or POST.
-- **Headers**: one `Name: value` per line, or several separated by `|`, e.g.
+- **Headers**: one `Name: value` per line, or several separated by a `|` with a space on each side, e.g.
   `Accept: application/json | X-Room: pool`.
 - **Secret header (token)**: never shown again, never written in the logs.
   A token alone is sent as `Authorization: Bearer <token>`; `Basic …` or
   `Token …` are sent as typed after `Authorization:`; a whole header such as
-  `X-Api-Key: abc123` is sent as is.
+  `X-Api-Key: abc123` (or `X-Api-Key:abc123`) is sent as is.
 - **Body (POST)**: sent with POST only; JSON is sent as `application/json`,
   anything else as text.
 - **Field path or /regular expression/**: where the value is (next section).
@@ -143,8 +143,7 @@ condition as for any sensor.
 - **Call an address**: sends a request — address, method (GET, POST, PUT,
   PATCH, DELETE), headers, body — where scene values can be inserted (type
   `{{`). The body is not sent with GET. **Secret header of sensor** adds the
-  secret header of a sensor, **only if the address is on the host of that
-  sensor**: a scene cannot send it elsewhere (no secret can be typed in a
+  secret header of a sensor, **only towards the address of that sensor (same scheme, host and port)**: a scene cannot send it elsewhere (no secret can be typed in a
   scene, every user can read them). An optional field path or regular
   expression reads a value in the answer.
 - **Read a sensor now**: reads a sensor without waiting for its interval, and
@@ -178,8 +177,7 @@ failed request does not stop the scene: test **Succeeded**.
   missing: fill in **Secret header (token)**.
 - **Certificate refused**: untick **Check the certificate (https)** for that
   slot.
-- **Redirected to another address, refused**: the address sends to another
-  host (often `http://` to a cloud login page). Type the final address.
+- **Redirected to another address, refused**: the address sends to another host, or from https to http (often `http://` to a cloud login page). Type the final address.
 - **No answer in time**: the address answers in more than 10 seconds.
 - **The value is not a number**: the path leads to a text or a list; adjust it,
   or choose the type **Text**.
@@ -191,7 +189,7 @@ failed request does not stop the scene: test **Succeeded**.
 - 10 sensors, one value each. For several values of one answer, use several
   slots with the same address.
 - Answers of 1 MB at most, 10 seconds at most (20 s for a scene call),
-  3 redirects at most, on the same host only.
+  3 redirects at most, on the same host only and never from https to http.
 - No cookies, no login form, no JavaScript: a page built by JavaScript in the
   browser shows nothing here. Use its API.
 - No units other than the ones of the types: a number in another unit goes in

@@ -9,6 +9,7 @@
 // sensor or changing its address keeps its device and history.
 // -----------------------------------------------------------------------------
 
+import { createHash } from 'node:crypto';
 import {
   SENSOR_TYPE_KEYS,
   checkRegex,
@@ -64,6 +65,8 @@ export const SLOT_ERRORS = Object.freeze({
 });
 
 const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+// What node:http accepts in a header value (Latin-1, no control character).
+const HEADER_VALUE = /^[\t\x20-\x7e\x80-\xff]*$/;
 const FORBIDDEN_HEADERS = new Set(['host', 'content-length', 'transfer-encoding', 'connection']);
 
 /**
@@ -83,7 +86,7 @@ export function parseHeaders(raw) {
     if (
       !HEADER_NAME.test(name) ||
       FORBIDDEN_HEADERS.has(name.toLowerCase()) ||
-      /[\r\n]/.test(value)
+      !HEADER_VALUE.test(value)
     ) {
       return null;
     }
@@ -102,12 +105,17 @@ export function secretHeader(raw) {
   if (!text) {
     return {};
   }
-  // A colon followed by a space: `user:password` stays a token.
-  const named = text.match(/^([!#$%&'*+.^_`|~0-9A-Za-z-]+):\s+(\S.*)$/);
-  if (named && !/^(basic|bearer|token|digest|apikey)$/i.test(named[1])) {
+  // A whole header: a colon followed by a space, or a name with a dash
+  // (`X-Api-Key:abc`). `user:password` stays a token.
+  const named = text.match(/^([!#$%&'*+.^_`|~0-9A-Za-z-]+):(\s*)(\S.*)$/);
+  if (
+    named &&
+    (named[2] || named[1].includes('-')) &&
+    !/^(basic|bearer|token|digest|apikey)$/i.test(named[1])
+  ) {
     return parseHeaders(text);
   }
-  if (/[\r\n]/.test(text)) {
+  if (!HEADER_VALUE.test(text)) {
     return null;
   }
   return { Authorization: /\s/.test(text) ? text : `Bearer ${text}` };
@@ -150,6 +158,9 @@ export function parseExtraction(raw) {
   const steps = parsePath(text);
   return steps ? { kind: 'path', steps } : null;
 }
+
+const digest = (value) =>
+  createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 24);
 
 const isTrue = (value) => value === true || value === 'true';
 
@@ -214,7 +225,8 @@ export function parseSlot(source, slot) {
     error,
   };
   // What makes a reading: a new one forgets the last value and the announced failure.
-  sensor.signature = JSON.stringify([
+  // Hashed: it is stored under /data, and the address and the headers can hold a key.
+  sensor.signature = digest([
     sensor.url,
     sensor.method,
     sensor.headers,
